@@ -314,7 +314,7 @@ export function CreateRiskForm({ isOpen, onClose, onSave, editRisk }: CreateRisk
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Чистый оп. риск (млн)</Label>
+                  <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
                   <Input
                     type="number"
                     value={scenario.cleanOp || ''}
@@ -323,7 +323,7 @@ export function CreateRiskForm({ isOpen, onClose, onSave, editRisk }: CreateRisk
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Оперриск в кредит. (млн)</Label>
+                  <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
                   <Input
                     type="number"
                     value={scenario.creditOp || ''}
@@ -357,11 +357,11 @@ export function CreateRiskForm({ isOpen, onClose, onSave, editRisk }: CreateRisk
         <div className="p-5 rounded-xl border border-border bg-card">
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Чистый оп. риск</p>
+              <p className="text-xs text-muted-foreground">Прямые потери</p>
               <p className="text-lg font-bold">{totals.cleanOp} млн</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Оперриск в кредит.</p>
+              <p className="text-xs text-muted-foreground">Кредитные потери</p>
               <p className="text-lg font-bold">{totals.creditOp} млн</p>
             </div>
             <div className="space-y-1">
@@ -387,7 +387,7 @@ export function CreateRiskForm({ isOpen, onClose, onSave, editRisk }: CreateRisk
         <h2 className="text-lg font-semibold mb-4">Лимиты</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Чистый оп. риск (млн)</Label>
+            <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
             <Input
               value={cleanOpLimit}
               onChange={e => setCleanOpLimit(e.target.value)}
@@ -401,7 +401,7 @@ export function CreateRiskForm({ isOpen, onClose, onSave, editRisk }: CreateRisk
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Оперриск в кредит. (млн)</Label>
+            <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
             <Input
               value={creditOpLimit}
               onChange={e => setCreditOpLimit(e.target.value)}

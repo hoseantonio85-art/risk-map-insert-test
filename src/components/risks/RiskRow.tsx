@@ -149,8 +149,8 @@ export function RiskRow({
 
         {/* Row 4: Losses */}
         <div className="flex items-center gap-5 pt-1.5 border-t border-border/50">
-          <LossItem label="Чистый" value={risk.cleanOpRisk.value} />
-          <LossItem label="Кредит" value={risk.creditOpRisk.value} />
+          <LossItem label="Прямые" value={risk.cleanOpRisk.value} />
+          <LossItem label="Кредитные" value={risk.creditOpRisk.value} />
           <LossItem label="Косвенные" value={risk.indirectLosses.value} />
           <LossItem label="Потенц." value={risk.potentialLosses} />
         </div>

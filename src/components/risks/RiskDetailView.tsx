@@ -152,12 +152,12 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit }: RiskDetailView
                   <h2 className="text-base font-semibold">Утилизация лимитов</h2>
                   <div className="grid grid-cols-3 gap-5">
                     <UtilizationCard
-                      title="Чистый операционный риск"
+                      title="Прямые потери"
                       lossLimit={risk.cleanOpRisk}
                       onExpand={() => setUtilizationOpen(true)}
                     />
                     <UtilizationCard
-                      title="Оперриск в кредитовании"
+                      title="Кредитные потери"
                       lossLimit={risk.creditOpRisk}
                       onExpand={() => setUtilizationOpen(true)}
                     />
@@ -174,8 +174,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit }: RiskDetailView
                   <h2 className="text-base font-semibold">Потенциальные потери</h2>
                   <div className="grid grid-cols-3 gap-4">
                     {([
-                      { label: 'Чистый операционный риск', value: risk.cleanOpRisk.value, delta: 12 },
-                      { label: 'Оперриск в кредитовании', value: risk.creditOpRisk.value, delta: -5 },
+                      { label: 'Прямые потери', value: risk.cleanOpRisk.value, delta: 12 },
+                      { label: 'Кредитные потери', value: risk.creditOpRisk.value, delta: -5 },
                       { label: 'Косвенные потери', value: risk.indirectLosses.value, delta: 3 },
                     ] as const).map((item) => (
                       <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">

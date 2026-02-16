@@ -30,7 +30,7 @@ export function RetroDataTable({ risk, draftLimits, onLimitChange }: RetroDataTa
 
   const rows: LossRow[] = [
     {
-      label: 'Чистый операционный риск',
+      label: 'Прямые потери',
       field: 'cleanOpRisk',
       fact2024: risk.cleanOpRisk.fact2024,
       fact2025: risk.cleanOpRisk.fact2025,
@@ -39,7 +39,7 @@ export function RetroDataTable({ risk, draftLimits, onLimitChange }: RetroDataTa
       newLimit: draftLimits?.cleanOpRisk ?? (risk.cleanOpRisk.limit || 0),
     },
     {
-      label: 'Опрриск в кредитовании',
+      label: 'Кредитные потери',
       field: 'creditOpRisk',
       fact2024: risk.creditOpRisk.fact2024,
       fact2025: risk.creditOpRisk.fact2025,

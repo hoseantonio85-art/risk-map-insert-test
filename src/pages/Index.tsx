@@ -285,13 +285,13 @@ const Index = () => {
             {/* Metrics */}
             <div className="grid grid-cols-4 gap-4">
               <MetricCard
-                title="Чистый операционный риск"
+                title="Прямые потери"
                 value={`${aggregates.cleanOpRisk.total.toLocaleString('ru-RU')} млн руб.`}
                 subValue={`из ${aggregates.cleanOpRisk.limit.toLocaleString('ru-RU')} млн руб.`}
                 utilization={aggregates.cleanOpRisk.utilization}
               />
               <MetricCard
-                title="Оперриск в кредитовании"
+                title="Кредитные потери"
                 value={`${aggregates.creditOpRisk.total.toLocaleString('ru-RU')} млн руб.`}
                 subValue={`из ${aggregates.creditOpRisk.limit.toLocaleString('ru-RU')} млн руб.`}
                 utilization={aggregates.creditOpRisk.utilization}
