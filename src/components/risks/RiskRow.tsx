@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Risk } from '@/types/risk';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RiskRowAccordion } from './RiskRowAccordion';
 
@@ -33,162 +32,102 @@ function StatusTag({ status }: { status: Risk['status'] }) {
   };
 
   return (
-    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium border bg-transparent", colorMap[status])}>
+    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium border bg-transparent leading-none", colorMap[status])}>
       {status}
     </span>
   );
 }
 
-function UtilBadge({ utilization }: { utilization: number }) {
-  if (!utilization || utilization === 0) return null;
-  
-  const color = utilization > 100
-    ? 'text-util-over'
-    : utilization > 80
-    ? 'text-util-high'
-    : utilization > 50
-    ? 'text-util-medium'
-    : 'text-util-low';
+function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
+  const colorMap: Record<Risk['riskLevel'], string> = {
+    'Низкий': 'bg-primary/15 text-primary',
+    'Средний': 'bg-yellow-100 text-yellow-700',
+    'Высокий': 'bg-destructive/15 text-destructive',
+  };
 
   return (
-    <span className={cn("text-xs font-medium", color)}>
-      {utilization}%
+    <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-semibold leading-none", colorMap[level])}>
+      {level}
     </span>
   );
 }
 
-function LimitCell({
-  value,
-  utilization,
-  isEditing,
-  draftValue,
-  onChange,
-}: {
-  value: number;
-  utilization?: number;
-  isEditing: boolean;
-  draftValue?: number;
-  onChange?: (val: number) => void;
-}) {
-  if (isEditing && onChange) {
-    return (
-      <div className="flex items-center justify-end gap-2">
-        <Input
-          type="number"
-          value={draftValue ?? value}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className="h-7 w-20 text-right text-sm font-medium"
-          step="0.1"
-        />
-      </div>
-    );
-  }
-
+function LossItem({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-end gap-2">
-      <span className="text-sm font-medium text-foreground">
-        {value > 0 ? value.toLocaleString('ru-RU') : '—'}
+    <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground/70">{label}:</span>{' '}
+      <span className={cn("font-medium", value > 0 ? "text-foreground" : "text-muted-foreground/50")}>
+        {value > 0 ? `${value.toLocaleString('ru-RU')}` : '—'}
       </span>
-      <UtilBadge utilization={utilization || 0} />
-    </div>
+    </span>
   );
 }
 
 export function RiskRow({
   risk,
   mode,
-  draftLimits,
-  onLimitChange,
   onRiskClick,
   selectionMode,
   isSelected,
   onToggleSelect,
 }: RiskRowProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const isEditing = mode === 'edit';
 
   return (
     <div className={cn(
-      "border border-border rounded-lg bg-card",
+      "border border-border rounded-lg bg-card transition-colors",
       isSelected && "ring-2 ring-primary/30 border-primary/30",
     )}>
-      {/* Main row */}
-      <div className="grid grid-cols-[minmax(160px,1fr)_minmax(220px,2fr)_repeat(4,minmax(120px,1fr))] items-center gap-0">
-        {/* Col 1: ID + Status */}
-        <div className="flex items-start gap-2 px-3 py-2.5 min-w-0">
+      <div className="px-4 py-3 space-y-1.5">
+        {/* Row 1: ID + Status + Risk Level + Chevron */}
+        <div className="flex items-center gap-2">
           {selectionMode && (
             <Checkbox
               checked={isSelected}
               onCheckedChange={() => onToggleSelect?.(risk.id)}
-              className="shrink-0 mt-0.5"
+              className="shrink-0"
             />
           )}
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="shrink-0 p-0.5 mt-0.5 hover:bg-accent rounded transition-colors"
-          >
-            {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
-          </button>
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs font-medium text-primary">{risk.id}</span>
-            <StatusTag status={risk.status} />
-          </div>
-        </div>
-
-        {/* Col 2: Name + Block + Subdivision */}
-        <div className="px-3 py-2.5 border-l border-border min-w-0">
-          <button
             onClick={() => onRiskClick(risk)}
-            className="text-sm text-foreground hover:text-primary transition-colors text-left truncate block w-full"
-            title={risk.riskName}
+            className="text-xs font-medium text-primary hover:underline"
           >
-            {risk.riskName}
+            {risk.id}
           </button>
-          <div className="text-xs text-muted-foreground truncate mt-0.5">{risk.block}</div>
-          <div className="text-xs text-muted-foreground truncate">{risk.subdivision}</div>
+          <StatusTag status={risk.status} />
+          <RiskLevelBadge level={risk.riskLevel} />
+          <div className="flex-1" />
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="p-1 hover:bg-accent rounded transition-colors"
+          >
+            {isOpen
+              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            }
+          </button>
         </div>
 
-        {/* Col 3: Clean OpRisk */}
-        <div className="px-3 py-2.5 border-l border-border">
-          <LimitCell
-            value={risk.cleanOpRisk.limit || 0}
-            utilization={risk.cleanOpRisk.utilization}
-            isEditing={isEditing}
-            draftValue={draftLimits?.cleanOpRisk}
-            onChange={isEditing ? (v) => onLimitChange?.(risk.id, 'cleanOpRisk', v) : undefined}
-          />
+        {/* Row 2: Risk name */}
+        <button
+          onClick={() => onRiskClick(risk)}
+          className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left block w-full truncate"
+          title={risk.riskName}
+        >
+          {risk.riskName}
+        </button>
+
+        {/* Row 3: Context */}
+        <div className="text-xs text-muted-foreground truncate">
+          ↳ {risk.process} · {risk.subdivision} · {risk.block}
         </div>
 
-        {/* Col 4: Credit OpRisk */}
-        <div className="px-3 py-2.5 border-l border-border">
-          <LimitCell
-            value={risk.creditOpRisk.limit || 0}
-            utilization={risk.creditOpRisk.utilization}
-            isEditing={isEditing}
-            draftValue={draftLimits?.creditOpRisk}
-            onChange={isEditing ? (v) => onLimitChange?.(risk.id, 'creditOpRisk', v) : undefined}
-          />
-        </div>
-
-        {/* Col 5: Indirect Losses */}
-        <div className="px-3 py-2.5 border-l border-border">
-          <LimitCell
-            value={risk.indirectLosses.limit || 0}
-            utilization={risk.indirectLosses.utilization}
-            isEditing={isEditing}
-            draftValue={draftLimits?.indirectLosses}
-            onChange={isEditing ? (v) => onLimitChange?.(risk.id, 'indirectLosses', v) : undefined}
-          />
-        </div>
-
-        {/* Col 6: Potential Losses */}
-        <div className="px-3 py-2.5 border-l border-border">
-          <LimitCell
-            value={risk.potentialLosses || 0}
-            isEditing={isEditing}
-            draftValue={draftLimits?.potentialLosses}
-            onChange={isEditing ? (v) => onLimitChange?.(risk.id, 'potentialLosses', v) : undefined}
-          />
+        {/* Row 4: Losses */}
+        <div className="flex items-center gap-4 pt-1 border-t border-border/50">
+          <LossItem label="Чистый" value={risk.cleanOpRisk.value} />
+          <LossItem label="Кредит" value={risk.creditOpRisk.value} />
+          <LossItem label="Косвенные" value={risk.indirectLosses.value} />
+          <LossItem label="Потенц." value={risk.potentialLosses} />
         </div>
       </div>
 

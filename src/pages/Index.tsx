@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { MetricCard } from '@/components/risks/MetricCard';
 import { RiskRow } from '@/components/risks/RiskRow';
-import { RiskListHeader } from '@/components/risks/RiskListHeader';
 import { CreateRiskForm } from '@/components/risks/CreateRiskForm';
 import { RiskDetailView } from '@/components/risks/RiskDetailView';
 import { Badge } from '@/components/ui/badge';
@@ -241,7 +240,7 @@ const Index = () => {
         <div className="px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold">Оценка рисков за период</h1>
+              <h1 className="text-xl font-semibold">Карта рисков за период</h1>
               {screenMode === 'edit' && (
                 <Badge variant="default" className="gap-1.5">Режим редактирования</Badge>
               )}
@@ -355,8 +354,7 @@ const Index = () => {
             </div>
 
             {/* Risk List */}
-            <div className="space-y-1.5">
-              <RiskListHeader />
+            <div className="space-y-2">
               {filteredRisks.map((risk) => (
                 <RiskRow
                   key={risk.id}

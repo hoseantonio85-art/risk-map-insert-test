@@ -18,8 +18,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: CheckSquare, label: 'Задачи' },
-  { icon: Target, label: 'Лимитная кампания' },
-  { icon: BarChart3, label: 'Оценка рисков', active: true },
+  { icon: Target, label: 'Инциденты' },
+  { icon: BarChart3, label: 'Карта рисков', active: true },
   { icon: Shield, label: 'Меры' },
   { icon: AlertTriangle, label: 'Риск поведения' },
   { icon: Bot, label: 'Риски ИИ-агентов' },
