@@ -135,7 +135,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit }: RiskDetailView
                 </div>
 
                 {/* Nav chips */}
-                <div className="sticky top-0 z-10 bg-background py-2 -mx-1 px-1 flex gap-2">
+                <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
                   {sections.map(s => (
                     <button
                       key={s.id}

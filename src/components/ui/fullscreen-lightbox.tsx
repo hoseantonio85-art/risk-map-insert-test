@@ -38,7 +38,9 @@ export function FullscreenLightbox({
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-8 py-8">
-        {children}
+        <div className="bg-card rounded-xl p-8 shadow-sm border border-border">
+          {children}
+        </div>
       </div>
     </div>
   );
