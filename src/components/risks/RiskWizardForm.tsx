@@ -35,7 +35,7 @@ const riskProfiles = [
 const strategies = ['Принять', 'Минимизировать', 'Передать', 'Избежать'];
 const qualitativeLossTypes = ['Нет', 'Репутационные', 'Регуляторные', 'Стратегические'];
 
-const subdivisions = [
+const subdivisionsList = [
   'Экосистемы B2C/ Дивизион ЗиС',
   'Блок ТБ / Дивизион КК',
   'Блок Розница / Дивизион ПЛ',
@@ -88,17 +88,16 @@ function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
 export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizardFormProps) {
   const isEditMode = !!editRisk;
 
-  // Step state
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(new Set());
   const [aiPrefilled, setAiPrefilled] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Step 1 fields
+  // Step 1
   const [process, setProcess] = useState(editRisk?.process || '');
   const [riskProfile, setRiskProfile] = useState(editRisk?.riskProfile || '');
 
-  // Step 2 fields (strategy & qualitative moved here)
+  // Step 2
   const [strategy, setStrategy] = useState(editRisk?.responseStrategy || '');
   const [qualitativeLosses, setQualitativeLosses] = useState(editRisk?.qualitativeLosses || '');
 
@@ -120,7 +119,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const [creditOpLimit, setCreditOpLimit] = useState(editRisk?.creditOpRisk?.limit?.toString() || '0');
   const [indirectLimit, setIndirectLimit] = useState(editRisk?.indirectLosses?.limit?.toString() || '0');
 
-  // Step 3 fields
+  // Step 3
   const [mirrors, setMirrors] = useState<Mirror[]>(editRisk?.mirrors || []);
 
   // Calculations
@@ -147,12 +146,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     return 'Низкий';
   }, [totals.total]);
 
-  const forecast = useMemo(() => {
-    const forecastValue = Math.round(totals.total * 1.12);
-    const delta = totals.total > 0 ? Math.round(((forecastValue - totals.total) / totals.total) * 100) : 0;
-    return { value: forecastValue, delta };
-  }, [totals.total]);
-
   const limitWarnings = useMemo(() => {
     const cleanLim = parseFloat(cleanOpLimit) || 0;
     const creditLim = parseFloat(creditOpLimit) || 0;
@@ -164,7 +157,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     };
   }, [totals, cleanOpLimit, creditOpLimit, indirectLimit]);
 
-  // Mirror limit calculations
   const mirrorLimits = useMemo(() => {
     const cleanLim = parseFloat(cleanOpLimit) || 0;
     const creditLim = parseFloat(creditOpLimit) || 0;
@@ -175,12 +167,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       indirect: Math.round(indirectLim * m.percentage / 100 * 10) / 10,
     }));
   }, [mirrors, cleanOpLimit, creditOpLimit, indirectLimit]);
-
-  const riskLevelColor: Record<Risk['riskLevel'], string> = {
-    'Высокий': 'text-destructive',
-    'Средний': 'text-[hsl(var(--chart-yellow))]',
-    'Низкий': 'text-primary',
-  };
 
   // Scenario helpers
   const addScenario = () => {
@@ -222,7 +208,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setCompletedSteps(prev => new Set(prev).add(1));
     setCurrentStep(2);
 
-    // AI prefill for new risks
     if (!isEditMode && scenarios.length === 0 && !aiPrefilled) {
       setAiLoading(true);
       setTimeout(() => {
@@ -285,7 +270,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     onClose();
   };
 
-  // Step validation
   const step1Valid = !!process && !!riskProfile;
   const step2Valid = scenarios.length > 0 && !!strategy;
 
@@ -330,72 +314,48 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       wide
       footer={footerContent}
     >
-      {/* Stepper */}
-      <div className="flex items-center gap-0 mb-2">
-        {steps.map((step, i) => {
-          const isActive = currentStep === step.num;
-          const isCompleted = completedSteps.has(step.num);
-          const isAccessible = step.num <= currentStep || isCompleted || completedSteps.has((step.num - 1) as WizardStep);
+      {/* Compact sticky stepper */}
+      <div className="sticky top-0 z-10 -mx-8 px-8 py-3 bg-card border-b border-border mb-6">
+        <div className="flex items-center gap-0">
+          {steps.map((step, i) => {
+            const isActive = currentStep === step.num;
+            const isCompleted = completedSteps.has(step.num);
+            const isAccessible = step.num <= currentStep || isCompleted || completedSteps.has((step.num - 1) as WizardStep);
 
-          return (
-            <div key={step.num} className="flex items-center flex-1">
-              <button
-                onClick={() => handleGoToStep(step.num)}
-                disabled={!isAccessible}
-                className={cn(
-                  "flex items-center gap-2.5 px-4 py-2 rounded-lg transition-colors w-full",
-                  isActive && "bg-primary/10 text-primary",
-                  !isActive && isCompleted && "text-primary hover:bg-primary/5",
-                  !isActive && !isCompleted && !isAccessible && "text-muted-foreground/50 cursor-not-allowed",
-                  !isActive && !isCompleted && isAccessible && "text-muted-foreground hover:bg-muted",
+            return (
+              <div key={step.num} className="flex items-center flex-1">
+                <button
+                  onClick={() => handleGoToStep(step.num)}
+                  disabled={!isAccessible}
+                  className={cn(
+                    "flex items-center gap-2.5 px-4 py-1.5 rounded-lg transition-colors w-full",
+                    isActive && "bg-primary/10 text-primary",
+                    !isActive && isCompleted && "text-primary hover:bg-primary/5",
+                    !isActive && !isCompleted && !isAccessible && "text-muted-foreground/50 cursor-not-allowed",
+                    !isActive && !isCompleted && isAccessible && "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 border-2 transition-colors",
+                    isActive && "bg-primary text-primary-foreground border-primary",
+                    isCompleted && !isActive && "bg-primary text-primary-foreground border-primary",
+                    !isActive && !isCompleted && "border-border bg-card text-muted-foreground",
+                  )}>
+                    {isCompleted && !isActive ? <Check className="w-3 h-3" /> : step.num}
+                  </div>
+                  <span className="text-sm font-medium truncate">{step.label}</span>
+                </button>
+                {i < steps.length - 1 && (
+                  <div className={cn(
+                    "h-px w-8 shrink-0",
+                    completedSteps.has(step.num) ? "bg-primary" : "bg-border"
+                  )} />
                 )}
-              >
-                <div className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 border-2 transition-colors",
-                  isActive && "bg-primary text-primary-foreground border-primary",
-                  isCompleted && !isActive && "bg-primary text-primary-foreground border-primary",
-                  !isActive && !isCompleted && "border-border bg-card text-muted-foreground",
-                )}>
-                  {isCompleted && !isActive ? <Check className="w-3.5 h-3.5" /> : step.num}
-                </div>
-                <span className="text-sm font-medium truncate">{step.label}</span>
-              </button>
-              {i < steps.length - 1 && (
-                <div className={cn(
-                  "h-px w-8 shrink-0",
-                  completedSteps.has(step.num) ? "bg-primary" : "bg-border"
-                )} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Sticky mini-summary (edit mode only) */}
-      {isEditMode && (
-        <div className="sticky top-0 z-10 -mx-8 px-8 py-3 mb-4 bg-card border-b border-border">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Прямые</span>
-              <span className="text-sm font-bold">{totals.cleanOp.toLocaleString('ru-RU')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Кредитные</span>
-              <span className="text-sm font-bold">{totals.creditOp.toLocaleString('ru-RU')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Косвенные</span>
-              <span className="text-sm font-bold">{totals.indirect.toLocaleString('ru-RU')}</span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Рискоёмкость</span>
-              <span className="text-sm font-bold">{totals.total.toLocaleString('ru-RU')} млн</span>
-            </div>
-            <RiskLevelBadge level={calculatedRiskLevel} />
-          </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* ===== STEP 1: General Info ===== */}
       <div className="space-y-0">
@@ -469,7 +429,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         >
           <div className={cn(
             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
-            completedSteps.has(2) ? "bg-primary text-primary-foreground" : currentStep === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+            completedSteps.has(2) || currentStep === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
           )}>
             {completedSteps.has(2) ? <Check className="w-3 h-3" /> : '2'}
           </div>
@@ -478,7 +438,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         </button>
 
         {currentStep === 2 && (
-          <div className="py-6 space-y-6">
+          <div className="py-6 space-y-8">
             {/* AI message */}
             {aiLoading ? (
               <div className="p-4 rounded-xl border border-[hsl(var(--ai-alert-border))]" style={{ backgroundColor: 'hsl(var(--ai-alert))' }}>
@@ -502,96 +462,77 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
               </div>
             ) : null}
 
-            {/* === Assessment Widget === */}
-            <div className="p-6 rounded-xl border border-border bg-card space-y-6">
-              <h3 className="text-base font-semibold">Оценка рисков</h3>
-
-              {/* A) Лимиты на риск */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground">Лимиты на риск</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
-                    <Input
-                      value={cleanOpLimit}
-                      onChange={e => setCleanOpLimit(e.target.value)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.cleanOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
-                    <Input
-                      value={creditOpLimit}
-                      onChange={e => setCreditOpLimit(e.target.value)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.creditOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Косвенные потери (млн)</Label>
-                    <Input
-                      value={indirectLimit}
-                      onChange={e => setIndirectLimit(e.target.value)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.indirect && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
+            {/* === Block A: Лимиты на риск === */}
+            <div className="p-6 rounded-xl border border-border bg-card space-y-4">
+              <h3 className="text-base font-semibold">Лимиты на риск</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
+                  <Input
+                    value={cleanOpLimit}
+                    onChange={e => setCleanOpLimit(e.target.value)}
+                    placeholder="0"
+                  />
+                  {limitWarnings.cleanOp && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Превышение лимита
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
+                  <Input
+                    value={creditOpLimit}
+                    onChange={e => setCreditOpLimit(e.target.value)}
+                    placeholder="0"
+                  />
+                  {limitWarnings.creditOp && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Превышение лимита
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Косвенные потери (млн)</Label>
+                  <Input
+                    value={indirectLimit}
+                    onChange={e => setIndirectLimit(e.target.value)}
+                    placeholder="0"
+                  />
+                  {limitWarnings.indirect && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Превышение лимита
+                    </p>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* B) Потенциальные потери (read-only from scenarios) */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground">Потенциальные потери</h4>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
-                    <p className="text-lg font-bold">{totals.cleanOp.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
-                    <p className="text-lg font-bold">{totals.creditOp.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
-                    <p className="text-lg font-bold">{totals.indirect.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Рискоёмкость</p>
-                    <p className="text-lg font-bold">{totals.total.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xs text-muted-foreground">Прогноз:</span>
-                      <span className="text-xs font-semibold">{forecast.value.toLocaleString('ru-RU')}</span>
-                      <span className={cn("text-xs font-semibold", forecast.delta > 0 ? "text-destructive" : "text-primary")}>
-                        {forecast.delta > 0 ? '+' : ''}{forecast.delta}%
-                      </span>
-                    </div>
-                  </div>
+            {/* === Block B: Потенциальные потери (read-only) === */}
+            <div className="p-6 rounded-xl border border-border bg-card space-y-4">
+              <h3 className="text-base font-semibold">Потенциальные потери</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
+                  <p className="text-lg font-bold">{totals.cleanOp.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Уровень риска:</span>
-                  <span className={cn("text-sm font-semibold", riskLevelColor[calculatedRiskLevel])}>
-                    {calculatedRiskLevel}
-                  </span>
+                <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
+                  <p className="text-lg font-bold">{totals.creditOp.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                  <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
+                  <p className="text-lg font-bold">{totals.indirect.toLocaleString('ru-RU')} <span className="text-xs font-normal text-muted-foreground">млн</span></p>
                 </div>
               </div>
+            </div>
 
-              {/* C) Стратегия реагирования */}
+            {/* === Block C: Решение по риску === */}
+            <div className="p-6 rounded-xl border border-border bg-card space-y-4">
+              <h3 className="text-base font-semibold">Решение по риску</h3>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Стратегия реагирования<span className="text-destructive">*</span></Label>
@@ -606,7 +547,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </SelectContent>
                   </Select>
                 </div>
-                {/* D) Качественные потери */}
                 <div className="space-y-2">
                   <Label>Качественные потери</Label>
                   <Select value={qualitativeLosses} onValueChange={setQualitativeLosses}>
@@ -626,80 +566,81 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
             {/* === Scenarios === */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold">Сценарии реализации риска</h3>
-              {scenarios.map((scenario, index) => (
-                <div key={scenario.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <h4 className="text-sm font-semibold">Сценарий {index + 1}</h4>
-                      <span className="text-xs text-muted-foreground">
-                        Доля: <span className="font-semibold text-foreground">{scenarioPercentages[index]}%</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Потери: <span className="font-semibold text-foreground">{(scenario.cleanOp + scenario.creditOp + scenario.indirect).toLocaleString('ru-RU')} млн</span>
-                      </span>
+              {scenarios.map((scenario, index) => {
+                const scenarioTotal = scenario.cleanOp + scenario.creditOp + scenario.indirect;
+                return (
+                  <div key={scenario.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <h4 className="text-sm font-semibold">Сценарий {index + 1}</h4>
+                        <span className="text-xs text-muted-foreground">
+                          Доля: <span className="font-semibold text-foreground">{scenarioPercentages[index]}%</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Сумма: <span className="font-semibold text-foreground">{scenarioTotal.toLocaleString('ru-RU')} млн</span>
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => removeScenario(scenario.id)}
+                        disabled={scenarios.length <= 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => removeScenario(scenario.id)}
-                      disabled={scenarios.length <= 1}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
 
-                  <div className="space-y-1.5">
                     <Textarea
                       value={scenario.description}
                       onChange={e => updateScenario(scenario.id, 'description', e.target.value)}
                       placeholder="Опишите сценарий реализации риска..."
                       className="min-h-[80px]"
                     />
-                  </div>
 
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
-                      <Input
-                        type="number"
-                        value={scenario.cleanOp || ''}
-                        onChange={e => updateScenario(scenario.id, 'cleanOp', parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
-                      <Input
-                        type="number"
-                        value={scenario.creditOp || ''}
-                        onChange={e => updateScenario(scenario.id, 'creditOp', parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Косвенные потери (млн)</Label>
-                      <Input
-                        type="number"
-                        value={scenario.indirect || ''}
-                        onChange={e => updateScenario(scenario.id, 'indirect', parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={scenario.probability || ''}
-                        onChange={e => updateScenario(scenario.id, 'probability', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                        placeholder="0"
-                      />
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
+                        <Input
+                          type="number"
+                          value={scenario.cleanOp || ''}
+                          onChange={e => updateScenario(scenario.id, 'cleanOp', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Кредитные потери (млн)</Label>
+                        <Input
+                          type="number"
+                          value={scenario.creditOp || ''}
+                          onChange={e => updateScenario(scenario.id, 'creditOp', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Косвенные потери (млн)</Label>
+                        <Input
+                          type="number"
+                          value={scenario.indirect || ''}
+                          onChange={e => updateScenario(scenario.id, 'indirect', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={scenario.probability || ''}
+                          onChange={e => updateScenario(scenario.id, 'probability', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <Button variant="ghost" className="gap-2 text-primary hover:text-primary hover:bg-primary/10" onClick={addScenario}>
                 <Plus className="w-5 h-5 bg-primary text-primary-foreground rounded-full p-0.5" />
@@ -729,7 +670,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         >
           <div className={cn(
             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
-            completedSteps.has(3) ? "bg-primary text-primary-foreground" : currentStep === 3 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+            completedSteps.has(3) || currentStep === 3 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
           )}>
             {completedSteps.has(3) ? <Check className="w-3 h-3" /> : '3'}
           </div>
@@ -760,7 +701,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                         <SelectValue placeholder="Выберите подразделение" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover z-50">
-                        {subdivisions.map(s => (
+                        {subdivisionsList.map(s => (
                           <SelectItem key={s} value={s}>{s}</SelectItem>
                         ))}
                       </SelectContent>
