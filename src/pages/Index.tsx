@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Save, Send, X, ListTodo, CheckSquare, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Save, Send, X, ListTodo, CheckSquare, AlertTriangle, LayoutList, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { MetricCard } from '@/components/risks/MetricCard';
 import { RiskRow } from '@/components/risks/RiskRow';
+import { ProcessCard } from '@/components/risks/ProcessCard';
 import { RiskWizardForm } from '@/components/risks/RiskWizardForm';
 import { RiskDetailView } from '@/components/risks/RiskDetailView';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,8 @@ import {
 } from '@/components/ui/select';
 import { mockRisks } from '@/data/mockRisks';
 import { Risk } from '@/types/risk';
+
+type ViewMode = 'list' | 'processes';
 
 type ScreenMode = 'view' | 'edit';
 
@@ -50,6 +53,10 @@ const Index = () => {
   const [showHighRiskOnly, setShowHighRiskOnly] = useState(false);
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2026');
+  const [selectedProcessFilter, setSelectedProcessFilter] = useState<string | null>(null);
+
+  // View mode
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   const subdivisions = useMemo(() => {
     return [...new Set(risks.map(r => r.subdivision))];
@@ -66,8 +73,53 @@ const Index = () => {
     if (selectedSubdivision !== 'all') {
       filtered = filtered.filter(r => r.subdivision === selectedSubdivision);
     }
+    if (selectedProcessFilter) {
+      filtered = filtered.filter(r => r.process === selectedProcessFilter);
+    }
     return filtered;
-  }, [risks, showTasksOnly, showHighRiskOnly, selectedSubdivision]);
+  }, [risks, showTasksOnly, showHighRiskOnly, selectedSubdivision, selectedProcessFilter]);
+
+  const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
+
+  const processGroups = useMemo(() => {
+    const groups: Record<string, {
+      processName: string;
+      risks: Risk[];
+      directLosses: number;
+      creditLosses: number;
+      indirectLosses: number;
+      maxRiskLevel: string;
+      statusBreakdown: Record<string, number>;
+    }> = {};
+
+    filteredRisks.forEach(risk => {
+      const key = risk.process || 'Без процесса';
+      if (!groups[key]) {
+        groups[key] = {
+          processName: key,
+          risks: [],
+          directLosses: 0,
+          creditLosses: 0,
+          indirectLosses: 0,
+          maxRiskLevel: 'Низкий',
+          statusBreakdown: {},
+        };
+      }
+      const g = groups[key];
+      g.risks.push(risk);
+      g.directLosses += risk.cleanOpRisk.value || 0;
+      g.creditLosses += risk.creditOpRisk.value || 0;
+      g.indirectLosses += risk.indirectLosses.value || 0;
+      if ((riskLevelPriority[risk.riskLevel] || 0) > (riskLevelPriority[g.maxRiskLevel] || 0)) {
+        g.maxRiskLevel = risk.riskLevel;
+      }
+      g.statusBreakdown[risk.status] = (g.statusBreakdown[risk.status] || 0) + 1;
+    });
+
+    return Object.values(groups).sort((a, b) =>
+      (riskLevelPriority[b.maxRiskLevel] || 0) - (riskLevelPriority[a.maxRiskLevel] || 0)
+    );
+  }, [filteredRisks]);
 
   const aggregates = useMemo(() => {
     const limitsToUse = screenMode === 'edit' ? draftLimits : pendingChanges;
@@ -382,32 +434,88 @@ const Index = () => {
 
               <div className="flex-1" />
 
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground mr-3">
                 Показано {filteredRisks.length} из {risks.length}
               </span>
+
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
+              >
+                <ToggleGroupItem value="list" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <LayoutList className="w-3.5 h-3.5" />
+                  Список
+                </ToggleGroupItem>
+                <ToggleGroupItem value="processes" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <FolderKanban className="w-3.5 h-3.5" />
+                  Процессы
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
 
-            {/* Risk List */}
-            <div className="space-y-2">
-              {filteredRisks.map((risk) => (
-                <RiskRow
-                  key={risk.id}
-                  risk={risk}
-                  mode={screenMode}
-                  draftLimits={screenMode === 'edit' ? draftLimits[risk.id] : undefined}
-                  onLimitChange={handleLimitChange}
-                  onRiskClick={handleRiskClick}
-                  selectionMode={selectionMode}
-                  isSelected={selectedRiskIds.has(risk.id)}
-                  onToggleSelect={handleToggleSelect}
-                />
-              ))}
-              {filteredRisks.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  Нет рисков, соответствующих выбранным фильтрам
-                </div>
-              )}
-            </div>
+            {/* Active process filter chip */}
+            {selectedProcessFilter && (
+              <div className="flex items-center gap-2 pt-2">
+                <Badge variant="secondary" className="gap-1.5 pr-1">
+                  Процесс: {selectedProcessFilter}
+                  <button
+                    onClick={() => { setSelectedProcessFilter(null); setViewMode('list'); }}
+                    className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              </div>
+            )}
+
+            {/* Risk List or Process Cards */}
+            {viewMode === 'list' ? (
+              <div className="space-y-2">
+                {filteredRisks.map((risk) => (
+                  <RiskRow
+                    key={risk.id}
+                    risk={risk}
+                    mode={screenMode}
+                    draftLimits={screenMode === 'edit' ? draftLimits[risk.id] : undefined}
+                    onLimitChange={handleLimitChange}
+                    onRiskClick={handleRiskClick}
+                    selectionMode={selectionMode}
+                    isSelected={selectedRiskIds.has(risk.id)}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                ))}
+                {filteredRisks.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Нет рисков, соответствующих выбранным фильтрам
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {processGroups.map((group) => (
+                  <ProcessCard
+                    key={group.processName}
+                    processName={group.processName}
+                    riskCount={group.risks.length}
+                    maxRiskLevel={group.maxRiskLevel as any}
+                    statusBreakdown={group.statusBreakdown}
+                    directLosses={group.directLosses}
+                    creditLosses={group.creditLosses}
+                    indirectLosses={group.indirectLosses}
+                    onClick={() => {
+                      setSelectedProcessFilter(group.processName);
+                      setViewMode('list');
+                    }}
+                  />
+                ))}
+                {processGroups.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    Нет процессов, соответствующих выбранным фильтрам
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
