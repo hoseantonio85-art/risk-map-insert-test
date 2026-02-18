@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { History, Plus, FileText, Sparkles, TrendingUp, TrendingDown, ArrowRight, Pencil, XCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FullscreenLightbox } from '@/components/ui/fullscreen-lightbox';
@@ -58,6 +60,11 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('info');
+  const [shortNumbers, setShortNumbers] = useState(true);
+
+  const fmtVal = (val: number) => shortNumbers
+    ? `${val.toLocaleString('ru-RU')} млн`
+    : val >= 1 ? `${(val * 1_000_000).toLocaleString('ru-RU')}` : val.toLocaleString('ru-RU');
 
   if (!risk) return null;
 
@@ -152,7 +159,15 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
 
             {/* Potential Losses */}
             <section id="potential" className="space-y-3">
-              <h2 className="text-base font-semibold">Потенциальные потери</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">Потенциальные потери</h2>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground cursor-pointer" htmlFor="num-toggle">
+                    {shortNumbers ? 'млн' : 'полные числа'}
+                  </Label>
+                  <Switch id="num-toggle" checked={!shortNumbers} onCheckedChange={v => setShortNumbers(!v)} />
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 {([
                   { label: 'Прямые потери', value: risk.cleanOpRisk.value, delta: 12 },
@@ -161,7 +176,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                 ] as const).map((item) => (
                   <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
-                    <p className="text-xl font-bold">{item.value.toLocaleString('ru-RU')} млн</p>
+                    <p className="text-xl font-bold">{fmtVal(item.value)}</p>
                     <div className="flex items-center gap-1.5">
                       {item.delta > 0 ? (
                         <TrendingUp className="w-3.5 h-3.5 text-destructive" />
