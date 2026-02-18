@@ -179,7 +179,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                 ] as const).map((item) => (
                   <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
-                    <p className="text-xl font-semibold">{fmtVal(item.value)}</p>
+                    <p className="text-lg font-semibold">{fmtVal(item.value)}</p>
                     <div className="flex items-center gap-1.5">
                       {item.delta > 0 ? (
                         <TrendingUp className="w-3.5 h-3.5 text-destructive" />

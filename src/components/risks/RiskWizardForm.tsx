@@ -155,7 +155,7 @@ function FormattedInput({
         value={display}
         onChange={handleChange}
         placeholder={placeholder}
-        className={cn("pr-8 text-right", className)}
+        className={cn("pr-8", className)}
       />
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
         ₽
@@ -671,15 +671,15 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
-                    <p className="text-lg font-medium text-right">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-base font-medium">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
-                    <p className="text-lg font-medium text-right">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-base font-medium">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
-                    <p className="text-lg font-medium text-right">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-base font-medium">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                 </div>
               </div>
@@ -862,15 +862,15 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Прямые</p>
-                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.cleanOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.cleanOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Кредитные</p>
-                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.creditOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.creditOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Косвенные</p>
-                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.indirect || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.indirect || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                   </div>
                 </div>
