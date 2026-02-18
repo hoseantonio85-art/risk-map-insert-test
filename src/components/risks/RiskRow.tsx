@@ -135,6 +135,7 @@ function LossChip({
       ) : (
         <span className="text-sm font-semibold text-foreground leading-tight">
           {formatCurrency(value)}
+          <span className="text-[11px] font-normal text-muted-foreground ml-1">млн ₽</span>
         </span>
       )}
     </div>
