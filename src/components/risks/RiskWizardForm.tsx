@@ -103,7 +103,8 @@ function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
   );
 }
 
-/** Formatted number input — displays with thousand separators, stores raw numeric value */
+/** Formatted number input — displays with thousand separators, stores raw numeric value.
+ *  Shows a non-interactive ₽ suffix when `showCurrency` is true (default). */
 function FormattedInput({ 
   value, 
   onChange, 
@@ -111,6 +112,7 @@ function FormattedInput({
   className,
   min,
   max,
+  showCurrency = true,
 }: { 
   value: number; 
   onChange: (val: number) => void; 
@@ -118,6 +120,7 @@ function FormattedInput({
   className?: string;
   min?: number;
   max?: number;
+  showCurrency?: boolean;
 }) {
   const [display, setDisplay] = useState(() => value ? formatNum(value) : '');
   
@@ -135,13 +138,29 @@ function FormattedInput({
     onChange(parsed);
   };
 
+  if (!showCurrency) {
+    return (
+      <Input
+        value={display}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={className}
+      />
+    );
+  }
+
   return (
-    <Input
-      value={display}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className={className}
-    />
+    <div className="relative">
+      <Input
+        value={display}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={cn("pr-8", className)}
+      />
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
+        ₽
+      </span>
+    </div>
   );
 }
 
@@ -766,6 +785,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                             placeholder="0"
                             min={0}
                             max={100}
+                            showCurrency={false}
                           />
                         </div>
                       </div>
