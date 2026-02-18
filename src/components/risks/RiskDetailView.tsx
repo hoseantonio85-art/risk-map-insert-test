@@ -21,12 +21,12 @@ interface RiskDetailViewProps {
 
 function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
   const map: Record<Risk['riskLevel'], string> = {
-    'Высокий': 'bg-destructive/10 text-destructive border-destructive/30',
-    'Средний': 'bg-[hsl(var(--chart-yellow))]/10 text-[hsl(var(--chart-yellow))] border-[hsl(var(--chart-yellow))]/30',
-    'Низкий': 'bg-primary/10 text-primary border-primary/30',
+    'Высокий': 'bg-destructive/8 text-destructive/80 border-destructive/20',
+    'Средний': 'bg-[hsl(var(--chart-yellow))]/8 text-[hsl(var(--chart-yellow))]/80 border-[hsl(var(--chart-yellow))]/20',
+    'Низкий': 'bg-primary/8 text-primary/80 border-primary/20',
   };
   return (
-    <span className={cn("text-xs px-2 py-0.5 rounded font-medium border", map[level])}>
+    <span className={cn("text-xs px-2.5 py-0.5 rounded-md font-medium border", map[level])}>
       {level}
     </span>
   );
@@ -179,14 +179,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                 ] as const).map((item) => (
                   <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
-                    <p className="text-xl font-bold">{fmtVal(item.value)}</p>
+                    <p className="text-xl font-semibold">{fmtVal(item.value)}</p>
                     <div className="flex items-center gap-1.5">
                       {item.delta > 0 ? (
                         <TrendingUp className="w-3.5 h-3.5 text-destructive" />
                       ) : (
                         <TrendingDown className="w-3.5 h-3.5 text-primary" />
                       )}
-                      <span className={cn("text-xs font-semibold", item.delta > 0 ? "text-destructive" : "text-primary")}>
+                      <span className={cn("text-xs font-medium", item.delta > 0 ? "text-destructive" : "text-primary")}>
                         {item.delta > 0 ? '+' : ''}{item.delta}%
                       </span>
                       <span className="text-xs text-muted-foreground ml-1">к пред. периоду</span>

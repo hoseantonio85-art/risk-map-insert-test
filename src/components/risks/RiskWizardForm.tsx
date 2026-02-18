@@ -92,12 +92,12 @@ function parseInputValue(formatted: string): number {
 
 function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
   const map: Record<Risk['riskLevel'], string> = {
-    'Высокий': 'bg-destructive/10 text-destructive border-destructive/30',
-    'Средний': 'bg-[hsl(var(--chart-yellow))]/10 text-[hsl(var(--chart-yellow))] border-[hsl(var(--chart-yellow))]/30',
-    'Низкий': 'bg-primary/10 text-primary border-primary/30',
+    'Высокий': 'bg-destructive/8 text-destructive/80 border-destructive/20',
+    'Средний': 'bg-[hsl(var(--chart-yellow))]/8 text-[hsl(var(--chart-yellow))]/80 border-[hsl(var(--chart-yellow))]/20',
+    'Низкий': 'bg-primary/8 text-primary/80 border-primary/20',
   };
   return (
-    <span className={cn("text-xs px-2 py-0.5 rounded font-medium border", map[level])}>
+    <span className={cn("text-xs px-2.5 py-0.5 rounded-md font-medium border", map[level])}>
       {level}
     </span>
   );
@@ -155,7 +155,7 @@ function FormattedInput({
         value={display}
         onChange={handleChange}
         placeholder={placeholder}
-        className={cn("pr-8", className)}
+        className={cn("pr-8 text-right", className)}
       />
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
         ₽
@@ -671,15 +671,15 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
-                    <p className="text-lg font-bold">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-lg font-medium text-right">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
-                    <p className="text-lg font-bold">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-lg font-medium text-right">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
-                    <p className="text-lg font-bold">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
+                    <p className="text-lg font-medium text-right">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                 </div>
               </div>
@@ -731,7 +731,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                             Доля: <span className="font-semibold text-foreground">{scenarioPercentages[index]}%</span>
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            Потенциальные потери: <span className="font-semibold text-foreground">{formatNum(scenarioTotal)} ₽</span>
+                            Потенциальные потери: <span className="font-medium text-foreground">{formatNum(scenarioTotal)} ₽</span>
                           </span>
                         </div>
                         <Button
@@ -862,15 +862,15 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Прямые</p>
-                      <p className="text-sm font-semibold">{formatNum(mirrorLimits[idx]?.cleanOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.cleanOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Кредитные</p>
-                      <p className="text-sm font-semibold">{formatNum(mirrorLimits[idx]?.creditOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.creditOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                     <div className="p-3 rounded-lg bg-card border border-border">
                       <p className="text-xs text-muted-foreground mb-0.5">Лимит: Косвенные</p>
-                      <p className="text-sm font-semibold">{formatNum(mirrorLimits[idx]?.indirect || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      <p className="text-sm font-medium text-right">{formatNum(mirrorLimits[idx]?.indirect || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                     </div>
                   </div>
                 </div>
