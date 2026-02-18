@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Plus, Trash2, AlertTriangle, Sparkles, Check, ChevronDown, ChevronRight, X, Eye } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Sparkles, Check, ChevronDown, ChevronRight, X, Eye, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,6 +160,127 @@ function FormattedInput({
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
         ₽
       </span>
+    </div>
+  );
+}
+
+function CollapsibleScenario({
+  scenario,
+  index,
+  scenarioTotal,
+  percentage,
+  onRemove,
+  canRemove,
+  onUpdate,
+}: {
+  scenario: ScenarioFormData;
+  index: number;
+  scenarioTotal: number;
+  percentage: number;
+  onRemove: () => void;
+  canRemove: boolean;
+  onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className="rounded-xl bg-muted/40 border border-border overflow-hidden">
+      {/* Header — always visible */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-3 w-full px-5 py-3.5 text-left hover:bg-muted/60 transition-colors"
+      >
+        {isOpen ? (
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        )}
+        <h4 className="text-sm font-semibold shrink-0">Сценарий {index + 1}</h4>
+        {!isOpen && (
+          <span className="text-xs text-muted-foreground truncate">
+            Потенциальные потери: <span className="font-medium text-foreground">{formatNum(scenarioTotal)} ₽</span>
+            {' · '}Доля: <span className="font-medium text-foreground">{percentage}%</span>
+            {scenario.probability > 0 && (
+              <>{' · '}Вероятность: <span className="font-medium text-foreground">{scenario.probability}%</span></>
+            )}
+          </span>
+        )}
+        <div className="flex-1" />
+        {isOpen && (
+          <>
+            <span className="text-xs text-muted-foreground shrink-0">
+              Доля: <span className="font-semibold text-foreground">{percentage}%</span>
+            </span>
+            <span className="text-xs text-muted-foreground shrink-0">
+              Потенциальные потери: <span className="font-medium text-foreground">{formatNum(scenarioTotal)} ₽</span>
+            </span>
+          </>
+        )}
+      </button>
+
+      {/* Expanded content */}
+      {isOpen && (
+        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              disabled={!canRemove}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <Textarea
+            value={scenario.description}
+            onChange={e => onUpdate('description', e.target.value)}
+            placeholder="Опишите сценарий реализации риска..."
+            className="min-h-[80px]"
+          />
+
+          <p className="text-xs font-medium text-muted-foreground mt-1">Потенциальные потери по сценарию</p>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Прямые потери</Label>
+              <FormattedInput
+                value={scenario.cleanOp}
+                onChange={v => onUpdate('cleanOp', v)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
+              <FormattedInput
+                value={scenario.creditOp}
+                onChange={v => onUpdate('creditOp', v)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
+              <FormattedInput
+                value={scenario.indirect}
+                onChange={v => onUpdate('indirect', v)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+              <FormattedInput
+                value={scenario.probability}
+                onChange={v => onUpdate('probability', v)}
+                placeholder="0"
+                min={0}
+                max={100}
+                showCurrency={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -411,7 +532,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const limitsMemoElement = (
     <>
       {showLimitsMemo && (
-        <div className="sticky bottom-[68px] z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
+        <div className="sticky bottom-0 z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
           <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card shadow-sm">
             <span className="text-xs font-medium text-muted-foreground shrink-0">Лимиты:</span>
             <div className="flex items-center gap-5 flex-1 min-w-0">
@@ -438,7 +559,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         </div>
       )}
       {limitsOutOfView && hasLimits && memoDismissed && (
-        <div className="sticky bottom-[68px] z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
+        <div className="sticky bottom-0 z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
           <button
             onClick={() => setMemoDismissed(false)}
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-1.5 transition-colors py-1"
@@ -723,74 +844,16 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 {scenarios.map((scenario, index) => {
                   const scenarioTotal = scenario.cleanOp + scenario.creditOp + scenario.indirect;
                   return (
-                    <div key={scenario.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
-                      <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                          <h4 className="text-sm font-semibold">Сценарий {index + 1}</h4>
-                          <span className="text-xs text-muted-foreground">
-                            Доля: <span className="font-semibold text-foreground">{scenarioPercentages[index]}%</span>
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Потенциальные потери: <span className="font-medium text-foreground">{formatNum(scenarioTotal)} ₽</span>
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => removeScenario(scenario.id)}
-                          disabled={scenarios.length <= 1}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      <Textarea
-                        value={scenario.description}
-                        onChange={e => updateScenario(scenario.id, 'description', e.target.value)}
-                        placeholder="Опишите сценарий реализации риска..."
-                        className="min-h-[80px]"
-                      />
-
-                      <p className="text-xs font-medium text-muted-foreground mt-1">Потенциальные потери по сценарию</p>
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Прямые потери</Label>
-                          <FormattedInput
-                            value={scenario.cleanOp}
-                            onChange={v => updateScenario(scenario.id, 'cleanOp', v)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-                          <FormattedInput
-                            value={scenario.creditOp}
-                            onChange={v => updateScenario(scenario.id, 'creditOp', v)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-                          <FormattedInput
-                            value={scenario.indirect}
-                            onChange={v => updateScenario(scenario.id, 'indirect', v)}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-                          <FormattedInput
-                            value={scenario.probability}
-                            onChange={v => updateScenario(scenario.id, 'probability', v)}
-                            placeholder="0"
-                            min={0}
-                            max={100}
-                            showCurrency={false}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <CollapsibleScenario
+                      key={scenario.id}
+                      scenario={scenario}
+                      index={index}
+                      scenarioTotal={scenarioTotal}
+                      percentage={scenarioPercentages[index]}
+                      onRemove={() => removeScenario(scenario.id)}
+                      canRemove={scenarios.length > 1}
+                      onUpdate={(field, value) => updateScenario(scenario.id, field, value)}
+                    />
                   );
                 })}
 

@@ -29,9 +29,9 @@ export function FullscreenLightbox({
   const maxW = wide ? 'max-w-[1240px]' : 'max-w-5xl';
 
   return (
-    <div className="fullscreen-lightbox animate-fade-in">
+    <div className="fullscreen-lightbox animate-fade-in flex flex-col h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card border-b border-border shadow-sm">
+      <div className="sticky top-0 z-10 bg-card border-b border-border shadow-sm shrink-0">
         <div className={cn(maxW, "mx-auto px-8 py-4 flex items-center justify-between")}>
           {headerContent ? (
             <>
@@ -63,19 +63,21 @@ export function FullscreenLightbox({
         </div>
       </div>
 
-      {/* Content */}
-      <div className={cn(maxW, "mx-auto px-8 py-8")}>
-        <div className="bg-card rounded-xl p-8 shadow-sm border border-border">
-          {children}
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-auto min-h-0">
+        <div className={cn(maxW, "mx-auto px-8 py-8")}>
+          <div className="bg-card rounded-xl p-8 shadow-sm border border-border">
+            {children}
+          </div>
         </div>
+
+        {/* Floating element above footer */}
+        {floatingAboveFooter}
       </div>
 
-      {/* Floating element above footer */}
-      {floatingAboveFooter}
-
-      {/* Footer */}
+      {/* Footer — always pinned to bottom */}
       {footer && (
-        <div className="sticky bottom-0 z-10 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
+        <div className="shrink-0 z-10 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
           <div className={cn(maxW, "mx-auto px-8 py-4")}>
             {footer}
           </div>

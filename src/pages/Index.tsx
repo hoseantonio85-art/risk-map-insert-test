@@ -111,6 +111,20 @@ const Index = () => {
     setIsWizardOpen(true);
   };
 
+  const handleWizardClose = () => {
+    if (wizardEditRisk) {
+      // Editing: return to detail view of this risk
+      setIsWizardOpen(false);
+      setSelectedRisk(wizardEditRisk);
+      setIsDetailOpen(true);
+      setWizardEditRisk(null);
+    } else {
+      // Creating: just close
+      setIsWizardOpen(false);
+      setWizardEditRisk(null);
+    }
+  };
+
   const handleWizardSave = (riskData: Partial<Risk>) => {
     if (wizardEditRisk) {
       // Edit existing
@@ -447,7 +461,7 @@ const Index = () => {
       {/* Wizard: Create / Edit */}
       <RiskWizardForm
         isOpen={isWizardOpen}
-        onClose={() => { setIsWizardOpen(false); setWizardEditRisk(null); }}
+        onClose={handleWizardClose}
         onSave={handleWizardSave}
         editRisk={wizardEditRisk}
       />
