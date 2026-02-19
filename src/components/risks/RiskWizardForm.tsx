@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Plus, Trash2, AlertTriangle, Sparkles, Check, ChevronDown, ChevronRight, X, Eye, ChevronsUpDown } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, Sparkles, Check, ChevronDown, ChevronRight, X, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,24 +51,6 @@ interface ScenarioFormData {
   probability: number;
 }
 
-const defaultScenarios: ScenarioFormData[] = [
-  {
-    id: 'ai-1',
-    description: 'Клиент предоставляет подложные документы при оформлении. Потери возникают при невозврате средств.',
-    cleanOp: 120,
-    creditOp: 80,
-    indirect: 30,
-    probability: 45,
-  },
-  {
-    id: 'ai-2',
-    description: 'Системная ошибка или человеческий фактор при проверке данных клиента приводит к одобрению заявки.',
-    cleanOp: 60,
-    creditOp: 45,
-    indirect: 15,
-    probability: 25,
-  },
-];
 
 type WizardStep = 1 | 2 | 3;
 
@@ -290,8 +272,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(new Set());
-  const [aiPrefilled, setAiPrefilled] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
 
   // Step 1
   const [process, setProcess] = useState(editRisk?.process || '');
@@ -332,12 +312,10 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const [limitsOutOfView, setLimitsOutOfView] = useState(false);
   const [memoDismissed, setMemoDismissed] = useState(false);
 
-  // Reset all form state when editRisk changes (e.g. switching from create to edit or editing a different risk)
+  // Reset all form state when editRisk changes or wizard opens/closes
   useEffect(() => {
     setCurrentStep(1);
     setCompletedSteps(new Set());
-    setAiPrefilled(false);
-    setAiLoading(false);
     setProcess(editRisk?.process || '');
     setRiskProfile(editRisk?.riskProfile || '');
     setStrategy(editRisk?.responseStrategy || '');
@@ -466,33 +444,23 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
   // Step navigation
   const handleContinueToStep2 = () => {
-    if (!process || !riskProfile) return;
     setCompletedSteps(prev => new Set(prev).add(1));
     setCurrentStep(2);
-
-    if (!isEditMode && scenarios.length === 0 && !aiPrefilled) {
-      setAiLoading(true);
-      setTimeout(() => {
-        setScenarios(defaultScenarios);
-        setCleanOpLimit(250);
-        setCreditOpLimit(150);
-        setIndirectLimit(60);
-        setStrategy('Минимизировать');
-        setQualitativeLosses('Нет');
-        setAiPrefilled(true);
-        setAiLoading(false);
-      }, 800);
-    }
   };
 
   const handleContinueToStep3 = () => {
-    if (scenarios.length === 0 || !strategy) return;
     setCompletedSteps(prev => new Set(prev).add(2));
     setCurrentStep(3);
   };
 
   const handleGoToStep = (step: WizardStep) => {
     if (step === currentStep) return;
+    // In edit mode — free navigation, no restrictions
+    if (isEditMode) {
+      setCurrentStep(step);
+      return;
+    }
+    // In create mode — allow going back freely, going forward only if previous step was visited
     if (step < currentStep || completedSteps.has(step) || completedSteps.has((step - 1) as WizardStep)) {
       setCurrentStep(step);
     }
@@ -549,10 +517,11 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         </h1>
         <RiskLevelBadge level={calculatedRiskLevel} />
       </div>
-      {(editRisk || process) && (
+      {/* In edit mode show process/profile context; in create mode keep header stable (no dynamic subtitle) */}
+      {editRisk && (
         <p className="text-sm text-muted-foreground truncate">
-          {process || editRisk?.process}
-          {riskProfile && ` • ${riskProfile}`}
+          {editRisk.process}
+          {editRisk.riskProfile && ` • ${editRisk.riskProfile}`}
         </p>
       )}
     </div>
@@ -561,7 +530,8 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const footerContent = (
     <div className="flex items-center justify-end gap-3">
       <Button variant="outline" onClick={onClose}>Отмена</Button>
-      <Button onClick={handleSave} disabled={!step1Valid || !step2Valid}>
+      {/* In edit mode always enable save; in create require step1 + step2 filled */}
+      <Button onClick={handleSave} disabled={isEditMode ? false : (!step1Valid || !step2Valid)}>
         Сохранить
       </Button>
     </div>
@@ -636,8 +606,18 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const renderStepHeader = (step: WizardStep, label: string) => {
     const isActive = currentStep === step;
     const isCompleted = completedSteps.has(step);
-    const isAccessible = step <= currentStep || isCompleted || completedSteps.has((step - 1) as WizardStep);
-    const isDisabled = !isAccessible;
+    // In edit mode all steps are always accessible
+    const isDisabled = false;
+
+    // Step validity indicator for create mode
+    const getStepState = () => {
+      if (isActive) return 'active';
+      if (isCompleted) return 'completed';
+      if (isEditMode) return 'accessible';
+      const isAccessible = step < currentStep || completedSteps.has((step - 1) as WizardStep);
+      return isAccessible ? 'accessible' : 'idle';
+    };
+    const stepState = getStepState();
 
     return (
       <button
@@ -646,15 +626,14 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         className={cn(
           "flex items-center gap-3 w-full px-5 py-4 text-left transition-colors",
           isActive && "rounded-t-xl",
-          !isActive && "rounded-xl",
-          isDisabled && "opacity-50 cursor-not-allowed",
+          !isActive && "rounded-xl hover:bg-muted/40",
         )}
       >
         <div className={cn(
           "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
-          isCompleted ? "bg-primary text-primary-foreground" : isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          stepState === 'completed' ? "bg-primary text-primary-foreground" : stepState === 'active' ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
         )}>
-          {isCompleted && !isActive ? <Check className="w-3 h-3" /> : step}
+          {stepState === 'completed' && !isActive ? <Check className="w-3 h-3" /> : step}
         </div>
         <span className="text-base font-semibold flex-1">{label}</span>
         {isActive ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
@@ -668,7 +647,8 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         {steps.map((step, i) => {
           const isActive = currentStep === step.num;
           const isCompleted = completedSteps.has(step.num);
-          const isAccessible = step.num <= currentStep || isCompleted || completedSteps.has((step.num - 1) as WizardStep);
+          // In edit mode all steps always accessible; in create mode — previously visited
+          const isAccessible = isEditMode || step.num <= currentStep || isCompleted || completedSteps.has((step.num - 1) as WizardStep);
 
           return (
             <div key={step.num} className="flex items-center flex-1">
@@ -758,11 +738,14 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleContinueToStep2} disabled={!step1Valid}>
-                  Продолжить
-                </Button>
-              </div>
+              {/* Продолжить — only shown in create mode */}
+              {!isEditMode && (
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleContinueToStep2} disabled={!step1Valid}>
+                    Продолжить
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -776,28 +759,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
           {currentStep === 2 && (
             <div className="px-5 pb-6 pt-2 space-y-8 border-t border-border">
-              {/* AI message */}
-              {aiLoading ? (
-                <div className="p-4 rounded-xl border border-[hsl(var(--ai-alert-border))]" style={{ backgroundColor: 'hsl(var(--ai-alert))' }}>
-                  <div className="flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 animate-pulse" style={{ color: 'hsl(var(--ai-alert-foreground))' }} />
-                    <p className="text-sm" style={{ color: 'hsl(var(--ai-alert-foreground))' }}>
-                      Заполняю оценку и сценарии на основе справочника и ретро-данных…
-                    </p>
-                  </div>
-                </div>
-              ) : aiPrefilled || isEditMode ? (
+              {/* In edit mode show a subtle context hint; in create mode — no AI banner */}
+              {isEditMode && (
                 <div className="p-4 rounded-xl border border-[hsl(var(--ai-alert-border))]" style={{ backgroundColor: 'hsl(var(--ai-alert))' }}>
                   <div className="flex items-start gap-3">
                     <Sparkles className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'hsl(var(--ai-alert-foreground))' }} />
                     <p className="text-sm" style={{ color: 'hsl(var(--ai-alert-foreground))' }}>
-                      {isEditMode
-                        ? 'Оценка и сценарии загружены из текущих данных риска. Проверьте и скорректируйте при необходимости.'
-                        : 'Я заполнил оценку и сценарии на основе справочника и ретро-данных. Проверьте и скорректируйте при необходимости.'}
+                      Оценка и сценарии загружены из текущих данных риска. Проверьте и скорректируйте при необходимости.
                     </p>
                   </div>
                 </div>
-              ) : null}
+              )}
 
               {/* === Рамка 1: Лимиты === */}
               <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
@@ -875,6 +847,11 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
                 {/* Scenarios inside this frame */}
                 <div className="space-y-3 pt-1">
+                  {scenarios.length === 0 && (
+                    <p className="text-sm text-muted-foreground py-2">
+                      Сценарии ещё не добавлены. Нажмите «Добавить сценарий» ниже.
+                    </p>
+                  )}
                   {scenarios.map((scenario, index) => {
                     const scenarioTotal = scenario.cleanOp + scenario.creditOp + scenario.indirect;
                     return (
@@ -931,11 +908,14 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <Button onClick={handleContinueToStep3} disabled={!step2Valid}>
-                  Продолжить
-                </Button>
-              </div>
+              {/* Продолжить — only shown in create mode */}
+              {!isEditMode && (
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleContinueToStep3}>
+                    Продолжить
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
