@@ -319,10 +319,13 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   const [creditOpLimit, setCreditOpLimit] = useState(editRisk?.creditOpRisk?.limit || 0);
   const [indirectLimit, setIndirectLimit] = useState(editRisk?.indirectLosses?.limit || 0);
 
-  // Step 3
+  // Step 3 — mirrors with editable limits per mirror
   const [mirrors, setMirrors] = useState<Mirror[]>(editRisk?.mirrors || []);
+  
+  // Per-mirror editable limits (keyed by mirror id)
+  const [mirrorEditLimits, setMirrorEditLimits] = useState<Record<string, { cleanOp: number; creditOp: number; indirect: number }>>({});
 
-  // Limits memo state
+  // Limits memo state — observe the limits block
   const limitsRef = useRef<HTMLDivElement>(null);
   const [limitsOutOfView, setLimitsOutOfView] = useState(false);
   const [memoDismissed, setMemoDismissed] = useState(false);
@@ -390,6 +393,18 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       indirect: Math.round(indirectLimit * m.percentage / 100 * 10) / 10,
     }));
   }, [mirrors, cleanOpLimit, creditOpLimit, indirectLimit]);
+
+  const getMirrorLimitValues = (mirrorId: string, idx: number) => {
+    if (mirrorEditLimits[mirrorId]) return mirrorEditLimits[mirrorId];
+    return mirrorLimits[idx] || { cleanOp: 0, creditOp: 0, indirect: 0 };
+  };
+
+  const updateMirrorLimit = (mirrorId: string, field: 'cleanOp' | 'creditOp' | 'indirect', value: number) => {
+    setMirrorEditLimits(prev => ({
+      ...prev,
+      [mirrorId]: { ...(prev[mirrorId] || { cleanOp: 0, creditOp: 0, indirect: 0 }), [field]: value },
+    }));
+  };
 
   // Scenario helpers
   const addScenario = () => {
@@ -533,25 +548,46 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     <>
       {showLimitsMemo && (
         <div className="sticky bottom-0 z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card shadow-sm">
-            <span className="text-xs font-medium text-muted-foreground shrink-0">Лимиты:</span>
-            <div className="flex items-center gap-5 flex-1 min-w-0">
-              <span className="text-xs">
-                <span className="text-muted-foreground">Прямые </span>
-                <span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span>
-              </span>
-              <span className="text-xs">
-                <span className="text-muted-foreground">Кредитные </span>
-                <span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span>
-              </span>
-              <span className="text-xs">
-                <span className="text-muted-foreground">Косвенные </span>
-                <span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span>
-              </span>
+          <div className="flex items-start gap-6 px-4 py-3 rounded-lg border border-border bg-card shadow-sm">
+            {/* Лимиты */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Лимиты</p>
+              <div className="flex items-center gap-5">
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Прямые </span>
+                  <span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span>
+                </span>
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Кредитные </span>
+                  <span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span>
+                </span>
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Косвенные </span>
+                  <span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span>
+                </span>
+              </div>
+            </div>
+            {/* Потенциальные потери */}
+            <div className="flex-1 min-w-0 border-l border-border pl-6">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Потенциальные</p>
+              <div className="flex items-center gap-5">
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Прямые </span>
+                  <span className="font-semibold text-foreground">{formatNum(totals.cleanOp)} ₽</span>
+                </span>
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Кредитные </span>
+                  <span className="font-semibold text-foreground">{formatNum(totals.creditOp)} ₽</span>
+                </span>
+                <span className="text-xs">
+                  <span className="text-muted-foreground">Косвенные </span>
+                  <span className="font-semibold text-foreground">{formatNum(totals.indirect)} ₽</span>
+                </span>
+              </div>
             </div>
             <button
               onClick={() => setMemoDismissed(true)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors shrink-0"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors shrink-0 self-start"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
@@ -739,9 +775,9 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               ) : null}
 
-              {/* === Block A: Лимиты на риск === */}
+              {/* === Рамка 1: Лимиты === */}
               <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Лимиты на риск</h3>
+                <h3 className="text-base font-semibold">Лимиты</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">Прямые потери</Label>
@@ -788,10 +824,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              {/* === Block B: Потенциальные потери (read-only) === */}
-              <div className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Потенциальные потери</h3>
-                <div className="grid grid-cols-3 gap-4">
+              {/* === Рамка 2: Потенциальные потери + Сценарии === */}
+              <div className="p-6 rounded-xl border border-border bg-card space-y-5">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-semibold">Потенциальные потери</h3>
+                  <p className="text-[12px] text-muted-foreground leading-normal">
+                    Рассчитываются из сценариев. Мелкие случаи можно объединять.
+                  </p>
+                </div>
+
+                {/* Read-only totals */}
+                <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
                     <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
                     <p className="text-base font-medium">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
@@ -805,9 +848,33 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     <p className="text-base font-medium">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                 </div>
+
+                {/* Scenarios inside this frame */}
+                <div className="space-y-3 pt-1">
+                  {scenarios.map((scenario, index) => {
+                    const scenarioTotal = scenario.cleanOp + scenario.creditOp + scenario.indirect;
+                    return (
+                      <CollapsibleScenario
+                        key={scenario.id}
+                        scenario={scenario}
+                        index={index}
+                        scenarioTotal={scenarioTotal}
+                        percentage={scenarioPercentages[index]}
+                        onRemove={() => removeScenario(scenario.id)}
+                        canRemove={scenarios.length > 1}
+                        onUpdate={(field, value) => updateScenario(scenario.id, field, value)}
+                      />
+                    );
+                  })}
+
+                  <Button variant="ghost" className="gap-2 text-primary hover:text-primary hover:bg-primary/10" onClick={addScenario}>
+                    <Plus className="w-5 h-5 bg-primary text-primary-foreground rounded-full p-0.5" />
+                    Добавить сценарий
+                  </Button>
+                </div>
               </div>
 
-              {/* === Block C: Решение по риску === */}
+              {/* === Решение по риску === */}
               <div className="p-6 rounded-xl border border-border bg-card space-y-4">
                 <h3 className="text-base font-semibold">Решение по риску</h3>
                 <div className="grid grid-cols-2 gap-6">
@@ -840,31 +907,6 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              {/* === Scenarios === */}
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold">Сценарии реализации риска</h3>
-                {scenarios.map((scenario, index) => {
-                  const scenarioTotal = scenario.cleanOp + scenario.creditOp + scenario.indirect;
-                  return (
-                    <CollapsibleScenario
-                      key={scenario.id}
-                      scenario={scenario}
-                      index={index}
-                      scenarioTotal={scenarioTotal}
-                      percentage={scenarioPercentages[index]}
-                      onRemove={() => removeScenario(scenario.id)}
-                      canRemove={scenarios.length > 1}
-                      onUpdate={(field, value) => updateScenario(scenario.id, field, value)}
-                    />
-                  );
-                })}
-
-                <Button variant="ghost" className="gap-2 text-primary hover:text-primary hover:bg-primary/10" onClick={addScenario}>
-                  <Plus className="w-5 h-5 bg-primary text-primary-foreground rounded-full p-0.5" />
-                  Добавить сценарий
-                </Button>
-              </div>
-
               <div className="flex justify-end pt-2">
                 <Button onClick={handleContinueToStep3} disabled={!step2Valid}>
                   Продолжить
@@ -887,7 +929,9 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 <p className="text-sm text-muted-foreground">Зеркала не добавлены. Добавьте подразделение для зеркалирования лимитов.</p>
               )}
 
-              {mirrors.map((mirror, idx) => (
+              {mirrors.map((mirror, idx) => {
+                const lv = getMirrorLimitValues(mirror.id, idx);
+                return (
                 <div key={mirror.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold">Зеркало {idx + 1}</h4>
@@ -896,50 +940,50 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-[1fr,120px] gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Подразделение<span className="text-destructive">*</span></Label>
+                    <Select value={mirror.subdivision} onValueChange={v => updateMirror(mirror.id, 'subdivision', v)}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Выберите подразделение" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {subdivisionsList.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mirror limits — editable */}
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <Label>Подразделение<span className="text-destructive">*</span></Label>
-                      <Select value={mirror.subdivision} onValueChange={v => updateMirror(mirror.id, 'subdivision', v)}>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Выберите подразделение" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover z-50">
-                          {subdivisionsList.map(s => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-xs text-muted-foreground">Прямые потери</Label>
+                      <FormattedInput
+                        value={lv.cleanOp}
+                        onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
+                        placeholder="0"
+                      />
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Доля (%)<span className="text-destructive">*</span></Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={mirror.percentage || ''}
-                        onChange={e => updateMirror(mirror.id, 'percentage', Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-                        placeholder="30"
+                      <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
+                      <FormattedInput
+                        value={lv.creditOp}
+                        onChange={v => updateMirrorLimit(mirror.id, 'creditOp', v)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
+                      <FormattedInput
+                        value={lv.indirect}
+                        onChange={v => updateMirrorLimit(mirror.id, 'indirect', v)}
+                        placeholder="0"
                       />
                     </div>
                   </div>
-
-                  {/* Mirror limits — read-only, calculated */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 rounded-lg bg-card border border-border">
-                      <p className="text-xs text-muted-foreground mb-0.5">Лимит: Прямые</p>
-                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.cleanOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-card border border-border">
-                      <p className="text-xs text-muted-foreground mb-0.5">Лимит: Кредитные</p>
-                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.creditOp || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-card border border-border">
-                      <p className="text-xs text-muted-foreground mb-0.5">Лимит: Косвенные</p>
-                      <p className="text-sm font-medium">{formatNum(mirrorLimits[idx]?.indirect || 0)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                    </div>
-                  </div>
                 </div>
-              ))}
+                );
+              })}
 
               <Button variant="ghost" className="gap-2 text-primary hover:text-primary hover:bg-primary/10" onClick={addMirror}>
                 <Plus className="w-5 h-5 bg-primary text-primary-foreground rounded-full p-0.5" />
