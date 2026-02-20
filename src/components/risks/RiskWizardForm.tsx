@@ -314,8 +314,9 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
   // Reset all form state when editRisk changes or wizard opens/closes
   useEffect(() => {
-    setCurrentStep(1);
-    setCompletedSteps(new Set());
+    // Edit mode opens at step 2 (Risk Assessment) by default
+    setCurrentStep(isEditMode ? 2 : 1);
+    setCompletedSteps(isEditMode ? new Set<WizardStep>([1]) : new Set());
     setProcess(editRisk?.process || '');
     setRiskProfile(editRisk?.riskProfile || '');
     setStrategy(editRisk?.responseStrategy || '');
@@ -500,21 +501,40 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     { num: 3 as WizardStep, label: 'Зеркалирование' },
   ];
 
+  // Risk level badge — shown in header
+  const riskLevelForHeader: Risk['riskLevel'] | null = isEditMode
+    ? calculatedRiskLevel
+    : (totals.total > 0 ? calculatedRiskLevel : null);
+
   const headerContent = (
-    <div className="space-y-1">
-      <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold truncate">
+    <div className="flex items-start gap-4 min-w-0 flex-1">
+      {/* Title block */}
+      <div className="flex-1 min-w-0 space-y-0.5">
+        <h1 className="text-lg font-semibold leading-snug line-clamp-2">
           {editRisk ? `${editRisk.id}: ${editRisk.riskName}` : 'Создание риска'}
         </h1>
-        <RiskLevelBadge level={calculatedRiskLevel} />
+        {/* In edit mode show process/profile context; in create mode keep header stable */}
+        {editRisk && (
+          <p className="text-sm text-muted-foreground truncate">
+            {editRisk.process}
+            {editRisk.riskProfile && ` • ${editRisk.riskProfile}`}
+          </p>
+        )}
       </div>
-      {/* In edit mode show process/profile context; in create mode keep header stable (no dynamic subtitle) */}
-      {editRisk && (
-        <p className="text-sm text-muted-foreground truncate">
-          {editRisk.process}
-          {editRisk.riskProfile && ` • ${editRisk.riskProfile}`}
-        </p>
-      )}
+
+      {/* Risk level block — stable, always present */}
+      <div className="shrink-0 flex flex-col items-end gap-1 pl-4 border-l border-border ml-2">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+          Уровень риска
+        </span>
+        {riskLevelForHeader ? (
+          <RiskLevelBadge level={riskLevelForHeader} />
+        ) : (
+          <span className="text-xs px-2.5 py-0.5 rounded-md font-medium border border-muted-foreground/20 bg-muted/40 text-muted-foreground">
+            Не оценён
+          </span>
+        )}
+      </div>
     </div>
   );
 
@@ -722,14 +742,12 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              {/* Продолжить — only shown in create mode */}
-              {!isEditMode && (
-                <div className="flex justify-end pt-2">
-                  <Button onClick={handleContinueToStep2}>
-                    Продолжить
-                  </Button>
-                </div>
-              )}
+              {/* Продолжить — in both modes, not a gate */}
+              <div className="flex justify-end pt-2">
+                <Button variant={isEditMode ? "outline" : "default"} onClick={handleContinueToStep2}>
+                  Продолжить
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -892,14 +910,12 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              {/* Продолжить — only shown in create mode */}
-              {!isEditMode && (
-                <div className="flex justify-end pt-2">
-                  <Button onClick={handleContinueToStep3}>
-                    Продолжить
-                  </Button>
-                </div>
-              )}
+              {/* Продолжить — in both modes, not a gate */}
+              <div className="flex justify-end pt-2">
+                <Button variant={isEditMode ? "outline" : "default"} onClick={handleContinueToStep3}>
+                  Продолжить
+                </Button>
+              </div>
             </div>
           )}
         </div>
