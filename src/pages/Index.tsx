@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Save, Send, X, ListTodo, CheckSquare, AlertTriangle, LayoutList, FolderKanban } from 'lucide-react';
+import { Plus, Pencil, Save, Send, X, ListTodo, CheckSquare, AlertTriangle, LayoutList, FolderKanban, SlidersHorizontal, Users, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { MetricCard } from '@/components/risks/MetricCard';
@@ -16,12 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { mockRisks } from '@/data/mockRisks';
 import { Risk } from '@/types/risk';
 
 type ViewMode = 'list' | 'processes';
-
 type ScreenMode = 'view' | 'edit';
+type PageMode = 'all' | 'my-events' | 'mirroring';
 
 interface DraftLimits {
   [riskId: string]: {
@@ -39,24 +44,25 @@ const Index = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [wizardEditRisk, setWizardEditRisk] = useState<Risk | null>(null);
   
-  // Screen mode state
   const [screenMode, setScreenMode] = useState<ScreenMode>('view');
   const [draftLimits, setDraftLimits] = useState<DraftLimits>({});
   const [pendingChanges, setPendingChanges] = useState<DraftLimits>({});
 
-  // Selection state
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedRiskIds, setSelectedRiskIds] = useState<Set<string>>(new Set());
 
   // Filter state
+  const [pageMode, setPageMode] = useState<PageMode>('all');
   const [showTasksOnly, setShowTasksOnly] = useState(false);
   const [showHighRiskOnly, setShowHighRiskOnly] = useState(false);
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2026');
   const [selectedProcessFilter, setSelectedProcessFilter] = useState<string | null>(null);
 
-  // View mode
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  // Widget expand state — synchronized across all 4
+  const [widgetsExpanded, setWidgetsExpanded] = useState(false);
 
   const subdivisions = useMemo(() => {
     return [...new Set(risks.map(r => r.subdivision))];
@@ -139,6 +145,8 @@ const Index = () => {
     let creditOpTotal = 0, creditOpLimit = 0;
     let indirectTotal = 0, indirectLimit = 0;
     let potentialTotal = 0;
+    // For potential breakdown
+    let potClean = 0, potCredit = 0, potIndirect = 0;
 
     filteredRisks.forEach(risk => {
       const draft = limitsToUse[risk.id];
@@ -149,13 +157,22 @@ const Index = () => {
       indirectTotal += risk.indirectLosses.value || 0;
       indirectLimit += draft?.indirectLosses ?? (risk.indirectLosses.limit || 0);
       potentialTotal += risk.potentialLosses || 0;
+      // Simple breakdown — attribute potential proportionally
+      potClean += risk.cleanOpRisk.value || 0;
+      potCredit += risk.creditOpRisk.value || 0;
+      potIndirect += risk.indirectLosses.value || 0;
     });
 
+    // Forecast — simple estimate (limit * 1.05)
+    const cleanForecast = Math.round(cleanOpTotal * 1.05 * 10) / 10;
+    const creditForecast = Math.round(creditOpTotal * 1.05 * 10) / 10;
+    const indirectForecast = Math.round(indirectTotal * 1.05 * 10) / 10;
+
     return {
-      cleanOpRisk: { total: cleanOpTotal, limit: cleanOpLimit, utilization: cleanOpLimit > 0 ? Math.round((cleanOpTotal / cleanOpLimit) * 100) : 0 },
-      creditOpRisk: { total: creditOpTotal, limit: creditOpLimit, utilization: creditOpLimit > 0 ? Math.round((creditOpTotal / creditOpLimit) * 100) : 0 },
-      indirectLosses: { total: indirectTotal, limit: indirectLimit, utilization: indirectLimit > 0 ? Math.round((indirectTotal / indirectLimit) * 100) : 0 },
-      potentialLosses: { total: potentialTotal },
+      cleanOpRisk: { total: cleanOpTotal, limit: cleanOpLimit, utilization: cleanOpLimit > 0 ? Math.round((cleanOpTotal / cleanOpLimit) * 100) : 0, forecast: cleanForecast },
+      creditOpRisk: { total: creditOpTotal, limit: creditOpLimit, utilization: creditOpLimit > 0 ? Math.round((creditOpTotal / creditOpLimit) * 100) : 0, forecast: creditForecast },
+      indirectLosses: { total: indirectTotal, limit: indirectLimit, utilization: indirectLimit > 0 ? Math.round((indirectTotal / indirectLimit) * 100) : 0, forecast: indirectForecast },
+      potentialLosses: { total: potentialTotal, cleanBreakdown: potClean, creditBreakdown: potCredit, indirectBreakdown: potIndirect },
     };
   }, [filteredRisks, screenMode, draftLimits, pendingChanges]);
 
@@ -177,13 +194,11 @@ const Index = () => {
 
   const handleWizardClose = () => {
     if (wizardEditRisk) {
-      // Editing: return to detail view of this risk
       setIsWizardOpen(false);
       setSelectedRisk(wizardEditRisk);
       setIsDetailOpen(true);
       setWizardEditRisk(null);
     } else {
-      // Creating: just close
       setIsWizardOpen(false);
       setWizardEditRisk(null);
     }
@@ -191,7 +206,6 @@ const Index = () => {
 
   const handleWizardSave = (riskData: Partial<Risk>) => {
     if (wizardEditRisk) {
-      // Edit existing — merge and return to detail view with updated data
       const updatedRisk: Risk = { ...wizardEditRisk, ...riskData };
       setRisks(prev => prev.map(r => r.id === wizardEditRisk.id ? updatedRisk : r));
       setIsWizardOpen(false);
@@ -199,7 +213,6 @@ const Index = () => {
       setIsDetailOpen(true);
       setWizardEditRisk(null);
     } else {
-      // Create new
       const fullRisk: Risk = {
         ...riskData,
         id: riskData.id || `QNR-${Math.floor(10000 + Math.random() * 90000)}`,
@@ -327,6 +340,11 @@ const Index = () => {
   const tasksCount = risks.filter(r => r.status === 'В работе' || r.status === 'На согласовании').length;
   const highRiskCount = risks.filter(r => r.riskLevel === 'Высокий').length;
 
+  const fmtMln = (v: number) => `${v.toLocaleString('ru-RU')} млн руб.`;
+
+  // Advanced filter state
+  const hasAdvancedFilters = selectedSubdivision !== 'all' || selectedPeriod !== '2026';
+
   return (
     <MainLayout>
       <div className="flex flex-col h-full">
@@ -370,55 +388,104 @@ const Index = () => {
         {/* === SCROLLABLE CONTENT === */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            {/* Section title */}
+            <h2 className="text-base font-semibold text-foreground">Потери от операционных рисков</h2>
+
             {/* Metrics */}
             <div className="grid grid-cols-4 gap-4">
               <MetricCard
-                title="Прямые потери"
-                value={`${aggregates.cleanOpRisk.total.toLocaleString('ru-RU')} млн руб.`}
-                subValue={`из ${aggregates.cleanOpRisk.limit.toLocaleString('ru-RU')} млн руб.`}
+                title="Чистые"
+                value={fmtMln(aggregates.cleanOpRisk.total)}
+                subValue={`из ${fmtMln(aggregates.cleanOpRisk.limit)}`}
                 utilization={aggregates.cleanOpRisk.utilization}
+                isExpanded={widgetsExpanded}
+                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                detailRows={[
+                  { label: 'Лимит', value: `${fmtMln(aggregates.cleanOpRisk.limit)}` },
+                  { label: 'Прогноз', value: `${fmtMln(aggregates.cleanOpRisk.forecast)}` },
+                  { label: 'Лимит после ребаджета', value: '—' },
+                ]}
               />
               <MetricCard
-                title="Кредитные потери"
-                value={`${aggregates.creditOpRisk.total.toLocaleString('ru-RU')} млн руб.`}
-                subValue={`из ${aggregates.creditOpRisk.limit.toLocaleString('ru-RU')} млн руб.`}
+                title="Кредитные"
+                value={fmtMln(aggregates.creditOpRisk.total)}
+                subValue={`из ${fmtMln(aggregates.creditOpRisk.limit)}`}
                 utilization={aggregates.creditOpRisk.utilization}
+                isExpanded={widgetsExpanded}
+                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                detailRows={[
+                  { label: 'Лимит', value: `${fmtMln(aggregates.creditOpRisk.limit)}` },
+                  { label: 'Прогноз', value: `${fmtMln(aggregates.creditOpRisk.forecast)}` },
+                  { label: 'Лимит после ребаджета', value: '—' },
+                ]}
               />
               <MetricCard
-                title="Косвенные потери"
-                value={`${aggregates.indirectLosses.total.toLocaleString('ru-RU')} млн руб.`}
-                subValue={`из ${aggregates.indirectLosses.limit.toLocaleString('ru-RU')} млн руб.`}
+                title="Косвенные"
+                value={fmtMln(aggregates.indirectLosses.total)}
+                subValue={`из ${fmtMln(aggregates.indirectLosses.limit)}`}
                 utilization={aggregates.indirectLosses.utilization}
+                isExpanded={widgetsExpanded}
+                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                detailRows={[
+                  { label: 'Лимит', value: `${fmtMln(aggregates.indirectLosses.limit)}` },
+                  { label: 'Прогноз', value: `${fmtMln(aggregates.indirectLosses.forecast)}` },
+                  { label: 'Лимит после ребаджета', value: '—' },
+                ]}
               />
               <MetricCard
-                title="Потенциальные потери"
-                value={`${aggregates.potentialLosses.total.toLocaleString('ru-RU')} млн руб.`}
+                title="Потенциальные"
+                value={fmtMln(aggregates.potentialLosses.total)}
                 utilization={0}
                 showDonut={false}
+                isExpanded={widgetsExpanded}
+                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                detailRows={[
+                  { label: 'Чистые', value: `${fmtMln(aggregates.potentialLosses.cleanBreakdown)}` },
+                  { label: 'Кредитные', value: `${fmtMln(aggregates.potentialLosses.creditBreakdown)}` },
+                  { label: 'Косвенные', value: `${fmtMln(aggregates.potentialLosses.indirectBreakdown)}` },
+                ]}
               />
             </div>
 
             {/* Filters */}
             <div className="flex items-center gap-3 pb-2 border-b border-border">
+              {/* Left: mode toggles */}
               <ToggleGroup
                 type="single"
-                value={showTasksOnly ? 'tasks' : ''}
-                onValueChange={(val) => setShowTasksOnly(val === 'tasks')}
+                value={pageMode}
+                onValueChange={(val) => { if (val) setPageMode(val as PageMode); }}
               >
-                <ToggleGroupItem value="tasks" className="gap-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  <ListTodo className="w-4 h-4" />
-                  Задачи
-                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-md bg-background/20 font-medium">{tasksCount}</span>
+                <ToggleGroupItem value="all" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  Все
+                </ToggleGroupItem>
+                <ToggleGroupItem value="my-events" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <Users className="w-3.5 h-3.5" />
+                  Мои события
+                </ToggleGroupItem>
+                <ToggleGroupItem value="mirroring" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Зеркалирование
                 </ToggleGroupItem>
               </ToggleGroup>
 
+              <div className="h-6 w-px bg-border" />
+
+              {/* Quick status filters */}
               <ToggleGroup
                 type="single"
-                value={showHighRiskOnly ? 'high' : ''}
-                onValueChange={(val) => setShowHighRiskOnly(val === 'high')}
+                value={showTasksOnly ? 'tasks' : (showHighRiskOnly ? 'high' : '')}
+                onValueChange={(val) => {
+                  setShowTasksOnly(val === 'tasks');
+                  setShowHighRiskOnly(val === 'high');
+                }}
               >
-                <ToggleGroupItem value="high" className="gap-2 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive">
-                  <AlertTriangle className="w-4 h-4" />
+                <ToggleGroupItem value="tasks" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <ListTodo className="w-3.5 h-3.5" />
+                  Задачи
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-md bg-background/20 font-medium">{tasksCount}</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="high" className="gap-1.5 px-3 data-[state=on]:bg-destructive/15 data-[state=on]:text-destructive">
+                  <AlertTriangle className="w-3.5 h-3.5" />
                   Высокий уровень
                   <span className="ml-1 px-1.5 py-0.5 text-xs rounded-md bg-background/20 font-medium">{highRiskCount}</span>
                 </ToggleGroupItem>
@@ -426,31 +493,64 @@ const Index = () => {
 
               <div className="h-6 w-px bg-border" />
 
-              <Select value={selectedSubdivision} onValueChange={setSelectedSubdivision}>
-                <SelectTrigger className="w-[240px]">
-                  <SelectValue placeholder="Подразделение" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все подразделения</SelectItem>
-                  {subdivisions.map(sub => (
-                    <SelectItem key={sub} value={sub}>{sub}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Период" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2024">2024</SelectItem>
-                  <SelectItem value="2025">2025</SelectItem>
-                  <SelectItem value="2026">2026</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Advanced filters */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    Фильтры
+                    {hasAdvancedFilters && (
+                      <span className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 space-y-4" align="start">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Подразделение</label>
+                    <Select value={selectedSubdivision} onValueChange={setSelectedSubdivision}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Подразделение" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все подразделения</SelectItem>
+                        {subdivisions.map(sub => (
+                          <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Год</label>
+                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Период" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2024">2024</SelectItem>
+                        <SelectItem value="2025">2025</SelectItem>
+                        <SelectItem value="2026">2026</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {hasAdvancedFilters && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedSubdivision('all');
+                        setSelectedPeriod('2026');
+                      }}
+                    >
+                      Сбросить фильтры
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
 
               <div className="flex-1" />
 
+              {/* Right: view switcher */}
               <ToggleGroup
                 type="single"
                 value={viewMode}
@@ -458,7 +558,7 @@ const Index = () => {
               >
                 <ToggleGroupItem value="list" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
                   <LayoutList className="w-3.5 h-3.5" />
-                  Список
+                  Риски
                 </ToggleGroupItem>
                 <ToggleGroupItem value="processes" className="gap-1.5 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
                   <FolderKanban className="w-3.5 h-3.5" />

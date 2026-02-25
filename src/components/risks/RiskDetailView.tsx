@@ -162,9 +162,9 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             <section id="utilization" className="space-y-3">
               <h2 className="text-base font-semibold">Утилизация лимитов</h2>
               <div className="grid grid-cols-3 gap-5">
-                <UtilizationCard title="Прямые потери" lossLimit={risk.cleanOpRisk} onExpand={() => setUtilizationOpen(true)} />
-                <UtilizationCard title="Кредитные потери" lossLimit={risk.creditOpRisk} onExpand={() => setUtilizationOpen(true)} />
-                <UtilizationCard title="Косвенные потери" lossLimit={risk.indirectLosses} onExpand={() => setUtilizationOpen(true)} />
+                <UtilizationCard title="Чистые" lossLimit={risk.cleanOpRisk} onExpand={() => setUtilizationOpen(true)} />
+                <UtilizationCard title="Кредитные" lossLimit={risk.creditOpRisk} onExpand={() => setUtilizationOpen(true)} />
+                <UtilizationCard title="Косвенные" lossLimit={risk.indirectLosses} onExpand={() => setUtilizationOpen(true)} />
               </div>
             </section>
 
@@ -173,9 +173,9 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               <h2 className="text-base font-semibold">Потенциальные потери</h2>
               <div className="grid grid-cols-3 gap-4">
                 {([
-                  { label: 'Прямые потери', value: risk.cleanOpRisk.value, delta: 12 },
-                  { label: 'Кредитные потери', value: risk.creditOpRisk.value, delta: -5 },
-                  { label: 'Косвенные потери', value: risk.indirectLosses.value, delta: 3 },
+                  { label: 'Чистые', value: risk.cleanOpRisk.value, delta: 12 },
+                  { label: 'Кредитные', value: risk.creditOpRisk.value, delta: -5 },
+                  { label: 'Косвенные', value: risk.indirectLosses.value, delta: 3 },
                 ] as const).map((item) => (
                   <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
                     <p className="text-xs text-muted-foreground">{item.label}</p>
