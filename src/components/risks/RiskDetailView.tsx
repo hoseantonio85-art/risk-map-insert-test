@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { History, Plus, FileText, Sparkles, TrendingUp, TrendingDown, ArrowRight, Pencil, XCircle } from 'lucide-react';
+import { History, Plus, FileText, Sparkles, TrendingUp, TrendingDown, ArrowRight, Pencil, XCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,93 @@ const sections = [
 ];
 
 type SidebarTab = 'info' | 'approvers';
+
+import type { Scenario } from '@/types/risk';
+
+function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Mock fact/forecast per scenario based on percentage
+  const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const totalFact = factClean + factCredit + factIndirect;
+
+  const forecastClean = Math.round(factClean * 1.2 * 10) / 10;
+  const forecastCredit = Math.round(factCredit * 1.15 * 10) / 10;
+  const forecastIndirect = Math.round(factIndirect * 1.1 * 10) / 10;
+  const totalForecast = forecastClean + forecastCredit + forecastIndirect;
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="p-4 space-y-2">
+        <p className="text-sm text-foreground">{scenario.description}</p>
+
+        {/* Tags */}
+        {(scenario.causeType || scenario.itService) && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {scenario.causeType && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground">
+                {scenario.causeType}
+              </span>
+            )}
+            {scenario.itService && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground">
+                {scenario.itService}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Summary line */}
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-muted-foreground">Факт: <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>
+          <span className="text-muted-foreground">Прогноз: <span className="font-semibold text-foreground">{fmtVal(totalForecast)} ₽</span></span>
+        </div>
+
+        {/* Expand toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 text-xs text-primary hover:underline pt-1"
+        >
+          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          Подробнее
+        </button>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border">
+          <div className="pt-3 grid grid-cols-2 gap-4">
+            {/* Fact breakdown */}
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-medium">{fmtVal(factClean)} ₽</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Кредитные</span><span className="font-medium">{fmtVal(factCredit)} ₽</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-medium">{fmtVal(factIndirect)} ₽</span></div>
+              </div>
+            </div>
+            {/* Forecast breakdown */}
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Прогноз</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-medium">{fmtVal(forecastClean)} ₽</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Кредитные</span><span className="font-medium">{fmtVal(forecastCredit)} ₽</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-medium">{fmtVal(forecastIndirect)} ₽</span></div>
+              </div>
+            </div>
+          </div>
+          {/* Source */}
+          <div className="text-xs text-muted-foreground pt-1">
+            Источник: <span className="text-foreground">Ручное создание</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: RiskDetailViewProps) {
   const [utilizationOpen, setUtilizationOpen] = useState(false);
@@ -202,35 +289,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               {risk.scenarios.length > 0 ? (
                 <div className="space-y-3">
                   {risk.scenarios.map((scenario) => (
-                    <div key={scenario.id} className="p-4 rounded-xl border border-border bg-card">
-                      <div className="flex items-start gap-4">
-                        <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                          <FileText className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-sm">{scenario.groupScenario}</h4>
-                            <Badge variant="outline" className="text-[10px] bg-[hsl(var(--ai-alert))] text-[hsl(var(--ai-alert-foreground))] border-[hsl(var(--ai-alert-border))]">
-                              Новый
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{scenario.description}</p>
-                          <div className="flex items-center gap-4 pt-1 flex-wrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">Потенц. потери:</span>
-                              <span className="text-sm font-semibold">{Math.round(risk.potentialLosses * scenario.percentage / 100).toLocaleString('ru-RU')} млн</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">Доля:</span>
-                              <span className="text-sm font-semibold">{scenario.percentage}%</span>
-                            </div>
-                            {mockMeasures.length > 0 && (
-                              <span className="text-xs text-primary">Мера назначена</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} />
                   ))}
                 </div>
               ) : (

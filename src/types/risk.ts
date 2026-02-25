@@ -44,6 +44,8 @@ export interface Scenario {
   description: string;
   percentage: number;
   groupScenario: string;
+  causeType?: string;
+  itService?: string;
 }
 
 export interface Mirror {

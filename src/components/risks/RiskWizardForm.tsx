@@ -49,7 +49,26 @@ interface ScenarioFormData {
   creditOp: number;
   indirect: number;
   probability: number;
+  causeType?: string;
+  itService?: string;
 }
+
+const causeTypes = [
+  'Человеческий фактор',
+  'Сбой ИТ-систем',
+  'Внешнее воздействие',
+  'Нарушение процесса',
+  'Мошенничество',
+];
+
+const itServices = [
+  'Супербанк Онлайн',
+  'АБС',
+  'CRM',
+  'Процессинг',
+  'ДБО',
+  'Хранилище данных',
+];
 
 
 type WizardStep = 1 | 2 | 3;
@@ -142,6 +161,64 @@ function FormattedInput({
       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none select-none">
         ₽
       </span>
+    </div>
+  );
+}
+
+function ExtraParamsBlock({
+  causeType,
+  itService,
+  onCauseTypeChange,
+  onItServiceChange,
+}: {
+  causeType?: string;
+  itService?: string;
+  onCauseTypeChange: (v: string) => void;
+  onItServiceChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(!!(causeType || itService));
+
+  return (
+    <div>
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-xs text-primary hover:underline flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" />
+          Дополнительные параметры
+        </button>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 pt-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Тип причины</Label>
+            <Select value={causeType || ''} onValueChange={onCauseTypeChange}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Выберите тип" />
+              </SelectTrigger>
+              <SelectContent>
+                {causeTypes.map(ct => (
+                  <SelectItem key={ct} value={ct}>{ct}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">ИТ-услуга</Label>
+            <Select value={itService || ''} onValueChange={onItServiceChange}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Выберите услугу" />
+              </SelectTrigger>
+              <SelectContent>
+                {itServices.map(it => (
+                  <SelectItem key={it} value={it}>{it}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -261,6 +338,14 @@ function CollapsibleScenario({
               />
             </div>
           </div>
+
+          {/* Optional extra params */}
+          <ExtraParamsBlock
+            causeType={scenario.causeType}
+            itService={scenario.itService}
+            onCauseTypeChange={(v) => onUpdate('causeType', v)}
+            onItServiceChange={(v) => onUpdate('itService', v)}
+          />
         </div>
       )}
     </div>
@@ -290,6 +375,8 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         creditOp: Math.round((risk.creditOpRisk.value || 0) * s.percentage / 100),
         indirect: Math.round((risk.indirectLosses.value || 0) * s.percentage / 100),
         probability: 0,
+        causeType: s.causeType,
+        itService: s.itService,
       }));
     }
     return [];
@@ -481,6 +568,8 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
         description: s.description,
         groupScenario: s.description.slice(0, 60),
         percentage: scenarioPercentages[i],
+        causeType: s.causeType,
+        itService: s.itService,
       })),
       mirrors,
       author: editRisk?.author || 'Садыков Илья',
