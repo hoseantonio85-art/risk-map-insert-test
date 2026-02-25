@@ -101,7 +101,7 @@ export function ProcessCard({
 
       {/* Row 3: Loss chips with progress bars */}
       <div className="flex items-stretch gap-1.5 pt-1.5 border-t border-border/50">
-        <LossChipWithBar label="Прямые" value={directLosses} utilization={directUtilization} />
+        <LossChipWithBar label="Чистые" value={directLosses} utilization={directUtilization} />
         <LossChipWithBar label="Кредитные" value={creditLosses} utilization={creditUtilization} />
         <LossChipWithBar label="Косвенные" value={indirectLosses} utilization={indirectUtilization} />
       </div>

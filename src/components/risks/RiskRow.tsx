@@ -114,29 +114,53 @@ function CurrencyInput({
   );
 }
 
+function getBarColor(utilization: number): string {
+  if (utilization > 80) return 'bg-destructive';
+  if (utilization >= 50) return 'bg-yellow-500';
+  return 'bg-primary';
+}
+
 function LossChip({
   label,
   value,
   editMode,
   editValue,
   onEditChange,
+  utilization,
 }: {
   label: string;
   value: number;
   editMode?: boolean;
   editValue?: number;
   onEditChange?: (v: number) => void;
+  utilization?: number;
 }) {
+  const cappedUtil = utilization != null ? Math.min(utilization, 100) : undefined;
+
   return (
-    <div className="flex-1 min-w-[120px] bg-muted/60 rounded-lg px-3 py-2 h-[52px] flex flex-col justify-center">
-      <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
-      {editMode && onEditChange ? (
-        <CurrencyInput value={editValue ?? value} onChange={onEditChange} />
-      ) : (
-        <span className="text-sm font-semibold text-foreground leading-tight">
-          {formatCurrency(value)}
-          <span className="text-[11px] font-normal text-muted-foreground ml-1">млн ₽</span>
-        </span>
+    <div className="flex-1 min-w-[120px] bg-muted/60 rounded-lg overflow-hidden flex flex-col">
+      <div className="px-3 py-2 flex-1 flex flex-col justify-center">
+        <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
+        {editMode && onEditChange ? (
+          <CurrencyInput value={editValue ?? value} onChange={onEditChange} />
+        ) : (
+          <span className="text-sm font-semibold text-foreground leading-tight">
+            {formatCurrency(value)}
+            <span className="text-[11px] font-normal text-muted-foreground ml-1">млн ₽</span>
+          </span>
+        )}
+      </div>
+      {/* Thin progress bar at bottom */}
+      {cappedUtil != null && cappedUtil > 0 && (
+        <div className="w-full h-[3px] bg-border/40">
+          <div
+            className={cn("h-full", getBarColor(utilization!))}
+            style={{ width: `${cappedUtil}%` }}
+          />
+        </div>
+      )}
+      {cappedUtil != null && cappedUtil === 0 && (
+        <div className="w-full h-[3px] bg-border/20" />
       )}
     </div>
   );
@@ -225,11 +249,12 @@ export function RiskRow({
         {/* Row 4: Loss chips */}
         <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
           <LossChip
-            label="Прямые"
+            label="Чистые"
             value={risk.cleanOpRisk.value}
             editMode={isEditMode}
             editValue={draftLimits?.cleanOpRisk}
             onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'cleanOpRisk', v) : undefined}
+            utilization={risk.cleanOpRisk.limit ? Math.round((risk.cleanOpRisk.value / risk.cleanOpRisk.limit) * 100) : undefined}
           />
           <LossChip
             label="Кредитные"
@@ -237,6 +262,7 @@ export function RiskRow({
             editMode={isEditMode}
             editValue={draftLimits?.creditOpRisk}
             onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'creditOpRisk', v) : undefined}
+            utilization={risk.creditOpRisk.limit ? Math.round((risk.creditOpRisk.value / risk.creditOpRisk.limit) * 100) : undefined}
           />
           <LossChip
             label="Косвенные"
@@ -244,6 +270,7 @@ export function RiskRow({
             editMode={isEditMode}
             editValue={draftLimits?.indirectLosses}
             onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'indirectLosses', v) : undefined}
+            utilization={risk.indirectLosses.limit ? Math.round((risk.indirectLosses.value / risk.indirectLosses.limit) * 100) : undefined}
           />
           <LossChip
             label="Потенц."

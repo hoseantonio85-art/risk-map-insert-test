@@ -12,7 +12,7 @@ function formatVal(val?: number) {
 export function RiskRowAccordion({ risk }: RiskRowAccordionProps) {
   const rows = [
     {
-      label: 'Прямые потери',
+      label: 'Чистые',
       fact2024: risk.cleanOpRisk.fact2024,
       fact2025: risk.cleanOpRisk.fact2025,
       forecast2025: risk.cleanOpRisk.forecast2025,

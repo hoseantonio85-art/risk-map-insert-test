@@ -47,7 +47,7 @@ export function UtilizationDrawer({ isOpen, onClose }: UtilizationDrawerProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Прямые потери</span>
+                  <span className="text-sm text-muted-foreground">Чистые</span>
                   <Badge variant="outline" className="text-xs bg-util-high/10 text-util-high border-util-high">
                     11%
                   </Badge>
@@ -75,7 +75,7 @@ export function UtilizationDrawer({ isOpen, onClose }: UtilizationDrawerProps) {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-chart-yellow" />
-                <span className="text-sm">Прямые потери</span>
+                <span className="text-sm">Чистые</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-chart-cyan" />
@@ -110,7 +110,7 @@ export function UtilizationDrawer({ isOpen, onClose }: UtilizationDrawerProps) {
                     stroke="hsl(var(--chart-yellow))" 
                     strokeWidth={2}
                     dot={false}
-                    name="Прямые потери"
+                    name="Чистые"
                   />
                   <Line 
                     type="monotone" 

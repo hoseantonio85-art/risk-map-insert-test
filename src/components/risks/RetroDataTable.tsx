@@ -30,7 +30,7 @@ export function RetroDataTable({ risk, draftLimits, onLimitChange }: RetroDataTa
 
   const rows: LossRow[] = [
     {
-      label: 'Прямые потери',
+      label: 'Чистые',
       field: 'cleanOpRisk',
       fact2024: risk.cleanOpRisk.fact2024,
       fact2025: risk.cleanOpRisk.fact2025,

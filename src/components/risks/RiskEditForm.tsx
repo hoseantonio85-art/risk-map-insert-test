@@ -269,7 +269,7 @@ export function RiskEditForm({ risk, onSave, onCancel }: RiskEditFormProps) {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
+                  <Label className="text-xs text-muted-foreground">Чистые (млн)</Label>
                   <Input
                     type="number"
                     value={scenario.cleanOp || ''}
@@ -312,7 +312,7 @@ export function RiskEditForm({ risk, onSave, onCancel }: RiskEditFormProps) {
         <div className="p-5 rounded-xl border border-border bg-card">
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Прямые потери</p>
+              <p className="text-xs text-muted-foreground">Чистые</p>
               <p className="text-lg font-bold">{totals.cleanOp} млн</p>
             </div>
             <div className="space-y-1">
@@ -342,7 +342,7 @@ export function RiskEditForm({ risk, onSave, onCancel }: RiskEditFormProps) {
         <h2 className="text-base font-semibold">Лимиты</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Прямые потери (млн)</Label>
+            <Label className="text-xs text-muted-foreground">Чистые (млн)</Label>
             <Input
               value={cleanOpLimit}
               onChange={e => setCleanOpLimit(e.target.value)}

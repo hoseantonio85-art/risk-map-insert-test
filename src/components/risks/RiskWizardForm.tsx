@@ -226,7 +226,7 @@ function CollapsibleScenario({
           <p className="text-xs font-medium text-muted-foreground mt-1">Потенциальные потери по сценарию</p>
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Прямые потери</Label>
+              <Label className="text-xs text-muted-foreground">Чистые</Label>
               <FormattedInput
                 value={scenario.cleanOp}
                 onChange={v => onUpdate('cleanOp', v)}
@@ -558,7 +558,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Лимиты</p>
               <div className="flex items-center gap-5">
                 <span className="text-xs">
-                  <span className="text-muted-foreground">Прямые </span>
+                  <span className="text-muted-foreground">Чистые </span>
                   <span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span>
                 </span>
                 <span className="text-xs">
@@ -576,7 +576,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Потенциальные</p>
               <div className="flex items-center gap-5">
                 <span className="text-xs">
-                  <span className="text-muted-foreground">Прямые </span>
+                  <span className="text-muted-foreground">Чистые </span>
                   <span className="font-semibold text-foreground">{formatNum(totals.cleanOp)} ₽</span>
                 </span>
                 <span className="text-xs">
@@ -778,7 +778,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 <h3 className="text-base font-semibold">Лимиты</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Прямые потери</Label>
+                    <Label className="text-xs text-muted-foreground">Чистые</Label>
                     <FormattedInput
                       value={cleanOpLimit}
                       onChange={v => handleLimitChange(setCleanOpLimit, v)}
@@ -834,7 +834,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 {/* Read-only totals */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Прямые потери</p>
+                    <p className="text-xs text-muted-foreground mb-1">Чистые</p>
                     <p className="text-base font-medium">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border border-border">
@@ -961,7 +961,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   {/* Mirror limits — editable */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Прямые потери</Label>
+                      <Label className="text-xs text-muted-foreground">Чистые</Label>
                       <FormattedInput
                         value={lv.cleanOp}
                         onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
