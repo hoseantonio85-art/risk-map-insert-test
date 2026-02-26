@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Plus, Pencil, Save, Send, X, CheckSquare, AlertTriangle, LayoutList, FolderKanban, SlidersHorizontal, Search } from 'lucide-react';
+import { Plus, Pencil, Save, Send, X, CheckSquare, LayoutList, FolderKanban, SlidersHorizontal, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { MetricCard } from '@/components/risks/MetricCard';
@@ -60,7 +60,7 @@ const Index = () => {
   // Filter state
   const [registryMode, setRegistryMode] = useState<RegistryMode>('registry');
   const [activeActionChip, setActiveActionChip] = useState<ActionChip | null>(null);
-  const [showHighRiskOnly, setShowHighRiskOnly] = useState(false);
+  const [showHighRiskOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -521,27 +521,30 @@ const Index = () => {
 
             {/* === CONTROL BAR — Line 1 === */}
             <div className="flex items-center gap-2 h-11">
-              {/* Segment control */}
-              <ToggleGroup
-                type="single"
-                value={registryMode}
-                onValueChange={(val) => {
-                  if (val) {
-                    setRegistryMode(val as RegistryMode);
-                    if (val !== 'actions') setActiveActionChip(null);
-                  }
-                }}
-              >
-                <ToggleGroupItem value="registry" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  Реестр
-                </ToggleGroupItem>
-                <ToggleGroupItem value="actions" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  Требуют действий
-                </ToggleGroupItem>
-                <ToggleGroupItem value="mirroring" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  Зеркалирование
-                </ToggleGroupItem>
-              </ToggleGroup>
+              {/* Segmented control */}
+              <div className="inline-flex items-center rounded-lg border border-border bg-muted/50 p-1 h-9">
+                {([
+                  { value: 'registry', label: 'Реестр' },
+                  { value: 'actions', label: 'Требуют действий' },
+                  { value: 'mirroring', label: 'Зеркалирование' },
+                ] as const).map((seg, i, arr) => (
+                  <button
+                    key={seg.value}
+                    onClick={() => {
+                      setRegistryMode(seg.value);
+                      if (seg.value !== 'actions') setActiveActionChip(null);
+                    }}
+                    className={cn(
+                      "relative px-3.5 py-1 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap",
+                      registryMode === seg.value
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    {seg.label}
+                  </button>
+                ))}
+              </div>
 
               {/* Search — expandable */}
               <div className="flex items-center">
@@ -569,19 +572,6 @@ const Index = () => {
                   </Button>
                 )}
               </div>
-
-              <div className="h-6 w-px bg-border" />
-
-              {/* Quick filter: Высокие */}
-              <Button
-                variant={showHighRiskOnly ? 'default' : 'outline'}
-                size="sm"
-                className={cn("gap-1.5 h-8", showHighRiskOnly && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
-                onClick={() => setShowHighRiskOnly(!showHighRiskOnly)}
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Высокие
-              </Button>
 
               {/* Filter drawer trigger */}
               <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setFilterDrawerOpen(true)}>
