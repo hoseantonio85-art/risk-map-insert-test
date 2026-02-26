@@ -165,6 +165,49 @@ function FormattedInput({
   );
 }
 
+function ClearableSelect({
+  value,
+  onValueChange,
+  onClear,
+  placeholder,
+  options,
+  label,
+}: {
+  value?: string;
+  onValueChange: (v: string) => void;
+  onClear: () => void;
+  placeholder: string;
+  options: string[];
+  label: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <div className="relative">
+        <Select value={value || ''} onValueChange={onValueChange}>
+          <SelectTrigger className="h-9 pr-8">
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map(o => (
+              <SelectItem key={o} value={o}>{o}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {value && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ExtraParamsBlock({
   causeType,
   itService,
@@ -177,6 +220,17 @@ function ExtraParamsBlock({
   onItServiceChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(!!(causeType || itService));
+  const hasBothFilled = !!(causeType && itService);
+  const hasAnyFilled = !!(causeType || itService);
+
+  const handleRemoveAll = () => {
+    if (hasBothFilled) {
+      if (!window.confirm('Удалить опции?')) return;
+    }
+    onCauseTypeChange('');
+    onItServiceChange('');
+    setOpen(false);
+  };
 
   return (
     <div>
@@ -190,32 +244,35 @@ function ExtraParamsBlock({
           Дополнительные параметры
         </button>
       ) : (
-        <div className="grid grid-cols-2 gap-4 pt-1">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Тип причины</Label>
-            <Select value={causeType || ''} onValueChange={onCauseTypeChange}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Выберите тип" />
-              </SelectTrigger>
-              <SelectContent>
-                {causeTypes.map(ct => (
-                  <SelectItem key={ct} value={ct}>{ct}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">Дополнительные параметры</span>
+            <button
+              type="button"
+              onClick={handleRemoveAll}
+              className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
+            >
+              <Trash2 className="w-3 h-3" />
+              Удалить опции
+            </button>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">ИТ-услуга</Label>
-            <Select value={itService || ''} onValueChange={onItServiceChange}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Выберите услугу" />
-              </SelectTrigger>
-              <SelectContent>
-                {itServices.map(it => (
-                  <SelectItem key={it} value={it}>{it}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <ClearableSelect
+              value={causeType}
+              onValueChange={onCauseTypeChange}
+              onClear={() => onCauseTypeChange('')}
+              placeholder="Выберите тип"
+              options={causeTypes}
+              label="Тип причины"
+            />
+            <ClearableSelect
+              value={itService}
+              onValueChange={onItServiceChange}
+              onClear={() => onItServiceChange('')}
+              placeholder="Выберите услугу"
+              options={itServices}
+              label="ИТ-услуга"
+            />
           </div>
         </div>
       )}
