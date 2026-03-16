@@ -6,26 +6,31 @@ import {
   AlertTriangle,
   Bot,
   ChevronRight,
-  LogOut
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
-  active?: boolean;
+  path: string;
 }
 
 const navItems: NavItem[] = [
-  { icon: CheckSquare, label: 'Задачи' },
-  { icon: Target, label: 'Инциденты' },
-  { icon: BarChart3, label: 'Карта рисков', active: true },
-  { icon: Shield, label: 'Меры' },
-  { icon: AlertTriangle, label: 'Риск поведения' },
-  { icon: Bot, label: 'Риски ИИ-агентов' },
+  { icon: LayoutDashboard, label: 'Главная', path: '/' },
+  { icon: BarChart3, label: 'Карта рисков', path: '/risks' },
+  { icon: CheckSquare, label: 'Задачи', path: '#' },
+  { icon: Target, label: 'Инциденты', path: '#' },
+  { icon: Shield, label: 'Меры', path: '#' },
+  { icon: AlertTriangle, label: 'Риск поведения', path: '#' },
+  { icon: Bot, label: 'Риски ИИ-агентов', path: '#' },
 ];
 
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <aside className="w-56 bg-sidebar text-sidebar-foreground flex flex-col h-screen shrink-0">
       {/* Logo */}
@@ -41,21 +46,25 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
-              item.active 
-                ? "bg-sidebar-accent text-sidebar-primary" 
-                : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
-            )}
-          >
-            <item.icon className="w-5 h-5 shrink-0" />
-            <span>{item.label}</span>
-            {item.active && <ChevronRight className="w-4 h-4 ml-auto" />}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => item.path !== '#' && navigate(item.path)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-primary" 
+                  : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
+              )}
+            >
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span>{item.label}</span>
+              {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </button>
+          );
+        })}
       </nav>
     </aside>
   );

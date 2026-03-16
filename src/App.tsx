@@ -24,7 +24,8 @@ const App = () => (
       <BrowserRouter basename={basename}>
       {/* LOVABLE_KEEP_END */}
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/risks" element={<Index />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
