@@ -161,23 +161,23 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Heat Map - 2 cols */}
           <Card className="lg:col-span-2">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-1.5 pt-4 px-4">
               <CardTitle className="text-base">Матрица рисков</CardTitle>
             </CardHeader>
-            <CardContent className="pb-5">
+            <CardContent className="pb-3 px-4 pt-1">
               <div className="flex">
                 {/* Y-axis labels */}
-                <div className="flex flex-col justify-between pr-2 py-1" style={{ width: 100 }}>
+                <div className="flex flex-col justify-between pr-1.5 py-0.5" style={{ width: 80 }}>
                   {[...probLabels].reverse().map((label) => (
                     <div key={label} className="flex-1 flex items-center">
-                      <span className="text-[11px] text-muted-foreground leading-tight text-right w-full">{label}</span>
+                      <span className="text-[10px] text-muted-foreground leading-tight text-right w-full">{label}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Grid */}
                 <div className="flex-1">
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-4 gap-1">
                     {[...heatMap].reverse().map((row, ri) =>
                       row.map((cell) => (
                         <Tooltip key={`${cell.probIdx}-${cell.impIdx}`}>
@@ -185,7 +185,7 @@ export default function Dashboard() {
                             <button
                               onClick={() => handleCellClick(cell)}
                               className={cn(
-                                'aspect-square rounded-lg flex items-center justify-center text-sm font-bold transition-all border',
+                                'aspect-[4/3] rounded-md flex items-center justify-center text-xs font-extrabold transition-all border',
                                 getCellColor(cell.probIdx, cell.impIdx),
                                 getCellBorderColor(cell.probIdx, cell.impIdx),
                                 cell.risks.length > 0
@@ -221,10 +221,10 @@ export default function Dashboard() {
                   </div>
 
                   {/* X-axis labels */}
-                  <div className="grid grid-cols-4 gap-1.5 mt-2">
+                  <div className="grid grid-cols-4 gap-1 mt-1">
                     {impLabels.map((label) => (
                       <div key={label} className="text-center">
-                        <span className="text-[11px] text-muted-foreground">{label}</span>
+                        <span className="text-[10px] text-muted-foreground">{label}</span>
                       </div>
                     ))}
                   </div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
               </div>
 
               {/* Axis titles */}
-              <div className="flex justify-between mt-3 text-xs text-muted-foreground">
+              <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
                 <span className="italic">← Вероятность</span>
                 <span className="italic">Ущерб →</span>
               </div>
