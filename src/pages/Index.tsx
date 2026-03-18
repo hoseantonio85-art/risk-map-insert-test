@@ -697,6 +697,17 @@ const Index = () => {
                     </button>
                   </Badge>
                 )}
+                {filterUtilZone && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Утилизация: {filterUtilZone}
+                    <button
+                      onClick={() => { setFilterUtilZone(null); setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
                 {selectedProcessFilter && (
                   <Badge variant="secondary" className="gap-1.5 pr-1">
                     Процесс: {selectedProcessFilter}
