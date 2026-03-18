@@ -182,8 +182,19 @@ const Index = () => {
     if (filterImpact) {
       filtered = filtered.filter(r => r.riskLevel === filterImpact);
     }
+    // Utilization zone filter (from donut widget)
+    if (filterUtilZone) {
+      filtered = filtered.filter(r => {
+        const u = r.cleanOpRisk.utilization;
+        if (filterUtilZone === '>100%') return u > 100;
+        if (filterUtilZone === '>80%') return u > 80 && u <= 100;
+        if (filterUtilZone === '>50%') return u > 50 && u <= 80;
+        if (filterUtilZone === '<50%') return u <= 50;
+        return true;
+      });
+    }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact]);
+  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
