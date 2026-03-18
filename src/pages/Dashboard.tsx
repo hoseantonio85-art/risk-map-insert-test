@@ -23,6 +23,7 @@ interface HeatMapCell {
 }
 
 const probLabels = ['Несущественная', 'Низкая', 'Средняя', 'Высокая', 'Очень высокая'];
+const probLabelsShort = ['Несущ', 'Низ', 'Сред', 'Выс', 'Оч. выс'];
 const impLabels = ['Низкий', 'Средний', 'Высокий', 'Очень высокий'];
 
 // Map risk level to impact index
