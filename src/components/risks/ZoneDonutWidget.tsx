@@ -98,7 +98,7 @@ export function ZoneDonutWidget() {
 
   return (
     <>
-      <Card className="flex flex-col">
+      <Card className="flex flex-col flex-1">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Распределение по зонам</CardTitle>
