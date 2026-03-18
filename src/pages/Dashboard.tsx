@@ -104,11 +104,6 @@ export default function Dashboard() {
   const indirectUtil = Math.round(mockRisks.filter(r => r.indirectLosses.limit).reduce((s, r) => s + r.indirectLosses.utilization, 0) / Math.max(1, mockRisks.filter(r => r.indirectLosses.limit).length));
   const creditUtil = Math.round(mockRisks.filter(r => r.creditOpRisk.limit).reduce((s, r) => s + r.creditOpRisk.utilization, 0) / Math.max(1, mockRisks.filter(r => r.creditOpRisk.limit).length));
 
-  // Distribution by zones
-  const over100 = mockRisks.filter(r => r.cleanOpRisk.utilization > 100).length;
-  const over80 = mockRisks.filter(r => r.cleanOpRisk.utilization > 80 && r.cleanOpRisk.utilization <= 100).length;
-  const over50 = mockRisks.filter(r => r.cleanOpRisk.utilization > 50 && r.cleanOpRisk.utilization <= 80).length;
-  const greenZone = mockRisks.filter(r => r.cleanOpRisk.utilization <= 50).length;
 
   const handleCellClick = (cell: HeatMapCell) => {
     if (cell.risks.length === 0) return;
