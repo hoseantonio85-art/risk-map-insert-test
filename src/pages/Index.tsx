@@ -451,7 +451,7 @@ const Index = () => {
 
   const fmtMln = (v: number) => `${v.toLocaleString('ru-RU')} млн руб.`;
 
-  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all' || !!filterProbability || !!filterImpact;
+  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all' || !!filterProbability || !!filterImpact || !!filterUtilZone;
 
   const uniqueProfiles = useMemo(() => [...new Set(risks.map(r => r.riskProfile))], [risks]);
   const uniqueStrategies = useMemo(() => [...new Set(risks.map(r => r.responseStrategy))], [risks]);
