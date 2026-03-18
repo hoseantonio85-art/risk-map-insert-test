@@ -200,11 +200,52 @@ export default function Dashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard title="Факт потерь" value={`${totalFactLosses.toFixed(1)} млн ₽`} />
-          <ForecastKpiCard
-            value={`${totalForecast.toFixed(1)} млн ₽`}
-            delta={forecastDelta}
-            trendingUp={forecastTrending}
-          />
+          <Card>
+            <CardContent className="p-5">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Прогноз потерь</p>
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xl font-bold text-foreground">{`${totalForecast.toFixed(1)} млн ₽`}</p>
+                  <p className={cn("mt-0.5 text-[11px] font-medium", forecastTrending ? 'text-destructive' : 'text-primary')}>
+                    {forecastDelta >= 0 ? '+' : ''}{forecastDelta}% к факту
+                  </p>
+                </div>
+                <div className="h-8 w-16 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={sparklineData}>
+                      <Line
+                        type="monotone"
+                        dataKey="v"
+                        stroke={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'}
+                        strokeWidth={1.5}
+                        dot={false}
+                        activeDot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="v"
+                        stroke="none"
+                        dot={(props: any) => {
+                          const { cx, cy, index } = props;
+                          if (index === sparklineData.length - 1) {
+                            return (
+                              <circle
+                                cx={cx}
+                                cy={cy}
+                                r={2.5}
+                                fill={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'}
+                              />
+                            );
+                          }
+                          return <circle r={0} />;
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <KpiCard title="Утилизация лимита" value={`${avgUtilization}%`} highlight={avgUtilization > 80} />
           <KpiCard title="Критические риски" value={String(criticalRisks)} highlight={criticalRisks > 3} />
         </div>
