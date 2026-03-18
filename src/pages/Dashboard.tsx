@@ -254,22 +254,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Distribution by zones */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Распределение по зонам</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ZoneRow label="≥ 100% лимита" count={over100} total={mockRisks.length} color="bg-util-over" />
-                <ZoneRow label="≥ 80%" count={over80} total={mockRisks.length} color="bg-util-high" />
-                <ZoneRow label="≥ 50%" count={over50} total={mockRisks.length} color="bg-util-medium" />
-                <ZoneRow label="Зелёная зона" count={greenZone} total={mockRisks.length} color="bg-util-low" />
-                <div className="flex justify-between pt-2 border-t border-border">
-                  <span className="text-xs font-medium text-muted-foreground">Всего</span>
-                  <span className="text-sm font-bold">{mockRisks.length}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Distribution by zones - donut */}
+            <ZoneDonutWidget />
           </div>
         </div>
 
