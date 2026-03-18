@@ -92,6 +92,20 @@ const Index = () => {
   const [filterImpact, setFilterImpact] = useState<string | null>(null);
   const [heatmapCount, setHeatmapCount] = useState<number | null>(null);
 
+  // Read URL params from heatmap navigation
+  useEffect(() => {
+    const prob = searchParams.get('probability');
+    const imp = searchParams.get('impact');
+    const count = searchParams.get('count');
+    if (prob) setFilterProbability(prob);
+    if (imp) setFilterImpact(imp);
+    if (count) setHeatmapCount(parseInt(count, 10));
+    // Clean URL params after reading
+    if (prob || imp) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Widget expand state — synchronized across all 4
