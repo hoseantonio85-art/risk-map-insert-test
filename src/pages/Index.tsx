@@ -173,8 +173,15 @@ const Index = () => {
     if (selectedProcessFilter) {
       filtered = filtered.filter(r => r.process === selectedProcessFilter);
     }
+    // Heatmap filters (probability & impact)
+    if (filterProbability) {
+      filtered = filtered.filter(r => riskToProbabilityLabel(r) === filterProbability);
+    }
+    if (filterImpact) {
+      filtered = filtered.filter(r => r.riskLevel === filterImpact);
+    }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter]);
+  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
