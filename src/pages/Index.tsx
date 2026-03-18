@@ -44,7 +44,19 @@ interface DraftLimits {
   };
 }
 
+const probLabelsMap = ['Несущественная', 'Низкая', 'Средняя', 'Высокая', 'Очень высокая'];
+
+function riskToProbabilityLabel(risk: Risk): string {
+  const util = risk.cleanOpRisk.utilization;
+  if (util > 100) return 'Очень высокая';
+  if (util > 80) return 'Высокая';
+  if (util > 50) return 'Средняя';
+  if (util > 25) return 'Низкая';
+  return 'Несущественная';
+}
+
 const Index = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [risks, setRisks] = useState<Risk[]>(mockRisks);
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
