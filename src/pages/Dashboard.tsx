@@ -153,14 +153,14 @@ export default function Dashboard() {
           <KpiCard title="Критические риски" value={String(criticalRisks)} highlight={criticalRisks > 3} />
         </div>
 
-        {/* Main analytical block */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Heat Map - 2 cols */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-1.5 pt-4 px-4">
+        {/* Main analytical block — single row, equal height */}
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-stretch">
+          {/* Heat Map */}
+          <Card className="flex flex-col">
+            <CardHeader className="pb-1.5 pt-3 px-4">
               <CardTitle className="text-base">Матрица рисков</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3 px-4 pt-1">
+            <CardContent className="pb-3 px-4 pt-1 flex-1 flex flex-col justify-center">
               <div className="flex">
                 {/* Y-axis labels */}
                 <div className="flex flex-col justify-between pr-1.5 py-0.5" style={{ width: 80 }}>
@@ -235,22 +235,24 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Right column - Limits */}
-          <div className="space-y-6">
+          {/* Right column — stretches to match heat map */}
+          <div className="flex flex-col gap-4">
             {/* Limit utilization */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-base">Утилизация лимитов</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 pb-3 space-y-3">
                 <LimitRow label="Прямые потери" value={directUtil} />
                 <LimitRow label="Косвенные потери" value={indirectUtil} />
                 <LimitRow label="Кредитные риски" value={creditUtil} />
               </CardContent>
             </Card>
 
-            {/* Distribution by zones - donut */}
-            <ZoneDonutWidget />
+            {/* Distribution by zones - donut — fills remaining space */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <ZoneDonutWidget />
+            </div>
           </div>
         </div>
 
