@@ -417,18 +417,7 @@ function LimitRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ZoneRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", color)} />
-      <span className="text-sm text-muted-foreground flex-1">{label}</span>
-      <span className="text-sm font-bold">{count}</span>
-      <div className="w-20 h-1.5 rounded-full bg-secondary overflow-hidden">
-        <div className={cn("h-full rounded-full", color)} style={{ width: `${(count / total) * 100}%` }} />
-      </div>
-    </div>
-  );
-}
+
 
 function DynamicRow({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color: string }) {
   return (
