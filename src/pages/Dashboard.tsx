@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Bot, TrendingUp, TrendingDown, AlertTriangle, ShieldAlert, Activity, Bell, ArrowRight, Plus } from 'lucide-react';
+import { Bot, TrendingUp, TrendingDown, AlertTriangle, Bell, ArrowRight, Plus } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { mockRisks } from '@/data/mockRisks';
+import { mockRisks, summaryMetrics } from '@/data/mockRisks';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { ZoneDonutWidget } from '@/components/risks/ZoneDonutWidget';
