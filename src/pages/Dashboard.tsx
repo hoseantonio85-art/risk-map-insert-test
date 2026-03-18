@@ -111,6 +111,39 @@ function ForecastKpiCard({ value, delta, trendingUp }: { value: string; delta: n
     </Card>
   );
 }
+function UtilKpiCard({ title, value, utilization, limit }: { title: string; value: string; utilization: number; limit: number }) {
+  const utilColor = utilization > 100 ? 'text-util-over' : utilization > 80 ? 'text-util-high' : utilization > 50 ? 'text-util-medium' : 'text-util-low';
+  const strokeColor = utilization > 100 ? 'hsl(330, 81%, 60%)' : utilization > 80 ? 'hsl(0, 84%, 60%)' : utilization > 50 ? 'hsl(45, 93%, 58%)' : 'hsl(160, 84%, 39%)';
+  const pct = Math.min(utilization, 100);
+  const r = 18;
+  const circ = 2 * Math.PI * r;
+  const dashOffset = circ - (pct / 100) * circ;
+
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">{title}</p>
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-foreground">{value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              лимит {limit.toFixed(1)} млн
+            </p>
+          </div>
+          <div className="relative w-11 h-11 shrink-0">
+            <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
+              <circle cx="22" cy="22" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="3.5" />
+              <circle cx="22" cy="22" r={r} fill="none" stroke={strokeColor} strokeWidth="3.5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={dashOffset} className="transition-all duration-500" />
+            </svg>
+            <span className={cn("absolute inset-0 flex items-center justify-center text-[10px] font-bold", utilColor)}>
+              {utilization}%
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
