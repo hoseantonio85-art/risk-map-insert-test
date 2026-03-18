@@ -99,6 +99,8 @@ export default function Dashboard() {
     mockRisks.reduce((s, r) => s + r.cleanOpRisk.utilization, 0) / mockRisks.length
   );
   const criticalRisks = mockRisks.filter(r => r.riskLevel === 'Высокий').length;
+  const forecastDelta = totalForecast > 0 ? Math.round(((totalForecast - totalFactLosses) / totalFactLosses) * 100) : 0;
+  const forecastTrending = forecastDelta >= 0; // true = increasing (worse)
 
   // Limit utilization data
   const directUtil = Math.round(mockRisks.reduce((s, r) => s + r.cleanOpRisk.utilization, 0) / mockRisks.length);
