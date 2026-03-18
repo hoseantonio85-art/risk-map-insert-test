@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Save, Send, X, CheckSquare, LayoutList, FolderKanban, SlidersHorizontal, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -43,7 +44,19 @@ interface DraftLimits {
   };
 }
 
+const probLabelsMap = ['Несущественная', 'Низкая', 'Средняя', 'Высокая', 'Очень высокая'];
+
+function riskToProbabilityLabel(risk: Risk): string {
+  const util = risk.cleanOpRisk.utilization;
+  if (util > 100) return 'Очень высокая';
+  if (util > 80) return 'Высокая';
+  if (util > 50) return 'Средняя';
+  if (util > 25) return 'Низкая';
+  return 'Несущественная';
+}
+
 const Index = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [risks, setRisks] = useState<Risk[]>(mockRisks);
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -75,6 +88,23 @@ const Index = () => {
   const [filterProfile, setFilterProfile] = useState<string>('all');
   const [filterHasMeasures, setFilterHasMeasures] = useState<string>('all');
   const [filterHasLimit, setFilterHasLimit] = useState<string>('all');
+  const [filterProbability, setFilterProbability] = useState<string | null>(null);
+  const [filterImpact, setFilterImpact] = useState<string | null>(null);
+  const [heatmapCount, setHeatmapCount] = useState<number | null>(null);
+
+  // Read URL params from heatmap navigation
+  useEffect(() => {
+    const prob = searchParams.get('probability');
+    const imp = searchParams.get('impact');
+    const count = searchParams.get('count');
+    if (prob) setFilterProbability(prob);
+    if (imp) setFilterImpact(imp);
+    if (count) setHeatmapCount(parseInt(count, 10));
+    // Clean URL params after reading
+    if (prob || imp) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
@@ -143,8 +173,15 @@ const Index = () => {
     if (selectedProcessFilter) {
       filtered = filtered.filter(r => r.process === selectedProcessFilter);
     }
+    // Heatmap filters (probability & impact)
+    if (filterProbability) {
+      filtered = filtered.filter(r => riskToProbabilityLabel(r) === filterProbability);
+    }
+    if (filterImpact) {
+      filtered = filtered.filter(r => r.riskLevel === filterImpact);
+    }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter]);
+  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
@@ -401,7 +438,7 @@ const Index = () => {
 
   const fmtMln = (v: number) => `${v.toLocaleString('ru-RU')} млн руб.`;
 
-  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all';
+  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all' || !!filterProbability || !!filterImpact;
 
   const uniqueProfiles = useMemo(() => [...new Set(risks.map(r => r.riskProfile))], [risks]);
   const uniqueStrategies = useMemo(() => [...new Set(risks.map(r => r.responseStrategy))], [risks]);
@@ -619,18 +656,45 @@ const Index = () => {
               </div>
             )}
 
-            {/* Active process filter chip */}
-            {selectedProcessFilter && (
-              <div className="flex items-center gap-2 pt-2">
-                <Badge variant="secondary" className="gap-1.5 pr-1">
-                  Процесс: {selectedProcessFilter}
-                  <button
-                    onClick={() => { setSelectedProcessFilter(null); setViewMode('list'); }}
-                    className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
+            {/* Active filter chips */}
+            {(selectedProcessFilter || filterProbability || filterImpact) && (
+              <div className="flex items-center gap-2 pt-2 flex-wrap">
+                {heatmapCount !== null && (
+                  <span className="text-sm text-muted-foreground">Найдено: {heatmapCount} рисков</span>
+                )}
+                {filterProbability && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Вероятность: {filterProbability}
+                    <button
+                      onClick={() => { setFilterProbability(null); if (!filterImpact) setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterImpact && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Ущерб: {filterImpact}
+                    <button
+                      onClick={() => { setFilterImpact(null); if (!filterProbability) setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {selectedProcessFilter && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Процесс: {selectedProcessFilter}
+                    <button
+                      onClick={() => { setSelectedProcessFilter(null); setViewMode('list'); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
               </div>
             )}
 

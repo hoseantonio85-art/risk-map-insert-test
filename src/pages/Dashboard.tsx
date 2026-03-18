@@ -23,6 +23,7 @@ interface HeatMapCell {
 }
 
 const probLabels = ['Несущественная', 'Низкая', 'Средняя', 'Высокая', 'Очень высокая'];
+const probLabelsShort = ['Несущ', 'Низ', 'Сред', 'Выс', 'Оч. выс'];
 const impLabels = ['Низкий', 'Средний', 'Высокий', 'Очень высокий'];
 
 // Map risk level to impact index
@@ -197,7 +198,15 @@ export default function Dashboard() {
 
   const handleNavigateToRegistry = () => {
     setDrawerOpen(false);
-    navigate('/risks');
+    if (selectedCell) {
+      const params = new URLSearchParams();
+      params.set('probability', selectedCell.probability);
+      params.set('impact', selectedCell.impact);
+      params.set('count', String(selectedCell.risks.length));
+      navigate(`/risks?${params.toString()}`);
+    } else {
+      navigate('/risks');
+    }
   };
 
   // Loss sources
@@ -288,7 +297,7 @@ export default function Dashboard() {
               <div className="flex flex-1 min-h-0">
                 {/* Y-axis labels */}
                 <div className="flex flex-col justify-between pr-1" style={{ width: 68 }}>
-                  {[...probLabels].reverse().map((label) => (
+                  {[...probLabelsShort].reverse().map((label) => (
                     <div key={label} className="flex-1 flex items-center">
                       <span className="text-[9px] text-muted-foreground leading-tight text-right w-full">{label}</span>
                     </div>
