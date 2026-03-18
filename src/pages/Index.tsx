@@ -90,18 +90,20 @@ const Index = () => {
   const [filterHasLimit, setFilterHasLimit] = useState<string>('all');
   const [filterProbability, setFilterProbability] = useState<string | null>(null);
   const [filterImpact, setFilterImpact] = useState<string | null>(null);
+  const [filterUtilZone, setFilterUtilZone] = useState<string | null>(null);
   const [heatmapCount, setHeatmapCount] = useState<number | null>(null);
 
-  // Read URL params from heatmap navigation
+  // Read URL params from heatmap/donut navigation
   useEffect(() => {
     const prob = searchParams.get('probability');
     const imp = searchParams.get('impact');
     const count = searchParams.get('count');
+    const utilZone = searchParams.get('utilZone');
     if (prob) setFilterProbability(prob);
     if (imp) setFilterImpact(imp);
+    if (utilZone) setFilterUtilZone(utilZone);
     if (count) setHeatmapCount(parseInt(count, 10));
-    // Clean URL params after reading
-    if (prob || imp) {
+    if (prob || imp || utilZone) {
       setSearchParams({}, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -180,8 +182,19 @@ const Index = () => {
     if (filterImpact) {
       filtered = filtered.filter(r => r.riskLevel === filterImpact);
     }
+    // Utilization zone filter (from donut widget)
+    if (filterUtilZone) {
+      filtered = filtered.filter(r => {
+        const u = r.cleanOpRisk.utilization;
+        if (filterUtilZone === '>100%') return u > 100;
+        if (filterUtilZone === '>80%') return u > 80 && u <= 100;
+        if (filterUtilZone === '>50%') return u > 50 && u <= 80;
+        if (filterUtilZone === '<50%') return u <= 50;
+        return true;
+      });
+    }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact]);
+  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
@@ -438,7 +451,7 @@ const Index = () => {
 
   const fmtMln = (v: number) => `${v.toLocaleString('ru-RU')} млн руб.`;
 
-  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all' || !!filterProbability || !!filterImpact;
+  const hasAdvancedFilters = selectedSubdivision !== 'all' || filterStatus !== 'all' || filterRiskLevels.length > 0 || filterStrategy !== 'all' || filterProfile !== 'all' || filterHasLimit !== 'all' || filterHasMeasures !== 'all' || !!filterProbability || !!filterImpact || !!filterUtilZone;
 
   const uniqueProfiles = useMemo(() => [...new Set(risks.map(r => r.riskProfile))], [risks]);
   const uniqueStrategies = useMemo(() => [...new Set(risks.map(r => r.responseStrategy))], [risks]);
@@ -657,7 +670,7 @@ const Index = () => {
             )}
 
             {/* Active filter chips */}
-            {(selectedProcessFilter || filterProbability || filterImpact) && (
+            {(selectedProcessFilter || filterProbability || filterImpact || filterUtilZone) && (
               <div className="flex items-center gap-2 pt-2 flex-wrap">
                 {heatmapCount !== null && (
                   <span className="text-sm text-muted-foreground">Найдено: {heatmapCount} рисков</span>
@@ -678,6 +691,17 @@ const Index = () => {
                     Ущерб: {filterImpact}
                     <button
                       onClick={() => { setFilterImpact(null); if (!filterProbability) setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterUtilZone && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Утилизация: {filterUtilZone}
+                    <button
+                      onClick={() => { setFilterUtilZone(null); setHeatmapCount(null); }}
                       className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
                     >
                       <X className="w-3 h-3" />
