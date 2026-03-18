@@ -656,18 +656,45 @@ const Index = () => {
               </div>
             )}
 
-            {/* Active process filter chip */}
-            {selectedProcessFilter && (
-              <div className="flex items-center gap-2 pt-2">
-                <Badge variant="secondary" className="gap-1.5 pr-1">
-                  Процесс: {selectedProcessFilter}
-                  <button
-                    onClick={() => { setSelectedProcessFilter(null); setViewMode('list'); }}
-                    className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
+            {/* Active filter chips */}
+            {(selectedProcessFilter || filterProbability || filterImpact) && (
+              <div className="flex items-center gap-2 pt-2 flex-wrap">
+                {heatmapCount !== null && (
+                  <span className="text-sm text-muted-foreground">Найдено: {heatmapCount} рисков</span>
+                )}
+                {filterProbability && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Вероятность: {filterProbability}
+                    <button
+                      onClick={() => { setFilterProbability(null); if (!filterImpact) setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {filterImpact && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Ущерб: {filterImpact}
+                    <button
+                      onClick={() => { setFilterImpact(null); if (!filterProbability) setHeatmapCount(null); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
+                {selectedProcessFilter && (
+                  <Badge variant="secondary" className="gap-1.5 pr-1">
+                    Процесс: {selectedProcessFilter}
+                    <button
+                      onClick={() => { setSelectedProcessFilter(null); setViewMode('list'); }}
+                      className="ml-1 p-0.5 rounded-full hover:bg-foreground/10 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )}
               </div>
             )}
 
