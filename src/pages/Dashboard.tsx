@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Bot, TrendingUp, TrendingDown, AlertTriangle, ShieldAlert, Activity, Bell, ArrowRight, Plus } from 'lucide-react';
+import { Bot, TrendingUp, TrendingDown, AlertTriangle, Bell, ArrowRight, Plus } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { mockRisks } from '@/data/mockRisks';
+import { mockRisks, summaryMetrics } from '@/data/mockRisks';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { ZoneDonutWidget } from '@/components/risks/ZoneDonutWidget';
@@ -197,15 +196,33 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* KPI Cards */}
+        {/* KPI Cards — Loss types */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard title="Факт потерь" value={`${totalFactLosses.toFixed(1)} млн ₽`} />
+          <UtilKpiCard
+            title="Прямые потери"
+            value={`${summaryMetrics.cleanOpRisk.total.toFixed(1)} млн ₽`}
+            utilization={summaryMetrics.cleanOpRisk.utilization}
+            limit={summaryMetrics.cleanOpRisk.limit}
+          />
+          <UtilKpiCard
+            title="Косвенные потери"
+            value={`${summaryMetrics.indirectLosses.total.toFixed(1)} млн ₽`}
+            utilization={summaryMetrics.indirectLosses.utilization}
+            limit={summaryMetrics.indirectLosses.limit}
+          />
+          <UtilKpiCard
+            title="Кредитные потери"
+            value={`${summaryMetrics.creditOpRisk.total.toFixed(1)} млн ₽`}
+            utilization={summaryMetrics.creditOpRisk.utilization}
+            limit={summaryMetrics.creditOpRisk.limit}
+          />
+          {/* Потенциальные потери — sparkline instead of circular */}
           <Card>
             <CardContent className="p-5">
-              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Прогноз потерь</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Потенциальные потери</p>
               <div className="flex items-end justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-xl font-bold text-foreground">{`${totalForecast.toFixed(1)} млн ₽`}</p>
+                  <p className="text-xl font-bold text-foreground">{summaryMetrics.potentialLosses.total.toFixed(1)} млн ₽</p>
                   <p className={cn("mt-0.5 text-[11px] font-medium", forecastTrending ? 'text-destructive' : 'text-primary')}>
                     {forecastDelta >= 0 ? '+' : ''}{forecastDelta}% к факту
                   </p>
@@ -213,72 +230,49 @@ export default function Dashboard() {
                 <div className="h-8 w-16 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={sparklineData}>
-                      <Line
-                        type="monotone"
-                        dataKey="v"
-                        stroke={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'}
-                        strokeWidth={1.5}
-                        dot={false}
-                        activeDot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="v"
-                        stroke="none"
-                        dot={(props: any) => {
-                          const { cx, cy, index } = props;
-                          if (index === sparklineData.length - 1) {
-                            return (
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={2.5}
-                                fill={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'}
-                              />
-                            );
-                          }
-                          return <circle r={0} />;
-                        }}
-                      />
+                      <Line type="monotone" dataKey="v" stroke={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'} strokeWidth={1.5} dot={false} activeDot={false} />
+                      <Line type="monotone" dataKey="v" stroke="none" dot={(props: any) => {
+                        const { cx, cy, index } = props;
+                        if (index === sparklineData.length - 1) return <circle cx={cx} cy={cy} r={2.5} fill={forecastTrending ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'} />;
+                        return <circle r={0} />;
+                      }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <KpiCard title="Утилизация лимита" value={`${avgUtilization}%`} highlight={avgUtilization > 80} />
-          <KpiCard title="Критические риски" value={String(criticalRisks)} highlight={criticalRisks > 3} />
         </div>
 
-        {/* Main analytical block — single row, equal height */}
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-stretch">
+        {/* Main analytical block — fixed 488px height */}
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4" style={{ height: 488 }}>
           {/* Heat Map */}
-          <Card className="flex flex-col">
-            <CardHeader className="pb-1.5 pt-3 px-4">
-              <CardTitle className="text-base">Матрица рисков</CardTitle>
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader className="pb-1 pt-2.5 px-3">
+              <CardTitle className="text-sm">Матрица рисков</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3 px-4 pt-1 flex-1 flex flex-col justify-center">
+            <CardContent className="pb-2 px-3 pt-0 flex-1 flex flex-col justify-center">
               <div className="flex">
                 {/* Y-axis labels */}
-                <div className="flex flex-col justify-between pr-1.5 py-0.5" style={{ width: 80 }}>
+                <div className="flex flex-col justify-between pr-1 py-0.5" style={{ width: 72 }}>
                   {[...probLabels].reverse().map((label) => (
                     <div key={label} className="flex-1 flex items-center">
-                      <span className="text-[10px] text-muted-foreground leading-tight text-right w-full">{label}</span>
+                      <span className="text-[9px] text-muted-foreground leading-tight text-right w-full">{label}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Grid */}
                 <div className="flex-1">
-                  <div className="grid grid-cols-4 gap-1">
-                    {[...heatMap].reverse().map((row, ri) =>
+                  <div className="grid grid-cols-4 gap-0.5">
+                    {[...heatMap].reverse().map((row) =>
                       row.map((cell) => (
                         <Tooltip key={`${cell.probIdx}-${cell.impIdx}`}>
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => handleCellClick(cell)}
                               className={cn(
-                                'aspect-[4/3] rounded-md flex items-center justify-center text-xs font-extrabold transition-all border',
+                                'aspect-[5/3] rounded flex items-center justify-center text-xs font-extrabold transition-all border',
                                 getCellColor(cell.probIdx, cell.impIdx),
                                 getCellBorderColor(cell.probIdx, cell.impIdx),
                                 cell.risks.length > 0
@@ -314,10 +308,10 @@ export default function Dashboard() {
                   </div>
 
                   {/* X-axis labels */}
-                  <div className="grid grid-cols-4 gap-1 mt-1">
+                  <div className="grid grid-cols-4 gap-0.5 mt-0.5">
                     {impLabels.map((label) => (
                       <div key={label} className="text-center">
-                        <span className="text-[10px] text-muted-foreground">{label}</span>
+                        <span className="text-[9px] text-muted-foreground">{label}</span>
                       </div>
                     ))}
                   </div>
@@ -325,32 +319,15 @@ export default function Dashboard() {
               </div>
 
               {/* Axis titles */}
-              <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+              <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
                 <span className="italic">← Вероятность</span>
                 <span className="italic">Ущерб →</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Right column — stretches to match heat map */}
-          <div className="flex flex-col gap-4">
-            {/* Limit utilization */}
-            <Card>
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="text-base">Утилизация лимитов</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-3 space-y-3">
-                <LimitRow label="Прямые потери" value={directUtil} />
-                <LimitRow label="Косвенные потери" value={indirectUtil} />
-                <LimitRow label="Кредитные риски" value={creditUtil} />
-              </CardContent>
-            </Card>
-
-            {/* Distribution by zones - donut — fills remaining space */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <ZoneDonutWidget />
-            </div>
-          </div>
+          {/* Donut widget — fills full 488px */}
+          <ZoneDonutWidget />
         </div>
 
         {/* Secondary analytics */}
@@ -486,34 +463,37 @@ export default function Dashboard() {
 
 // Sub-components
 
-function KpiCard({ title, value, highlight }: { title: string; value: string; highlight?: boolean }) {
+function UtilKpiCard({ title, value, utilization, limit }: { title: string; value: string; utilization: number; limit: number }) {
+  const utilColor = utilization > 100 ? 'text-util-over' : utilization > 80 ? 'text-util-high' : utilization > 50 ? 'text-util-medium' : 'text-util-low';
+  const strokeColor = utilization > 100 ? 'hsl(330, 81%, 60%)' : utilization > 80 ? 'hsl(0, 84%, 60%)' : utilization > 50 ? 'hsl(45, 93%, 58%)' : 'hsl(160, 84%, 39%)';
+  const pct = Math.min(utilization, 100);
+  const r = 18;
+  const circ = 2 * Math.PI * r;
+  const dashOffset = circ - (pct / 100) * circ;
+
   return (
     <Card>
       <CardContent className="p-5">
         <p className="text-xs font-medium text-muted-foreground mb-1.5">{title}</p>
-        <p className={cn("text-xl font-bold", highlight ? 'text-destructive' : 'text-foreground')}>
-          {value}
-        </p>
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-foreground">{value}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              лимит {limit.toFixed(1)} млн
+            </p>
+          </div>
+          <div className="relative w-11 h-11 shrink-0">
+            <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
+              <circle cx="22" cy="22" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="3.5" />
+              <circle cx="22" cy="22" r={r} fill="none" stroke={strokeColor} strokeWidth="3.5" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={dashOffset} className="transition-all duration-500" />
+            </svg>
+            <span className={cn("absolute inset-0 flex items-center justify-center text-[10px] font-bold", utilColor)}>
+              {utilization}%
+            </span>
+          </div>
+        </div>
       </CardContent>
     </Card>
-  );
-}
-
-
-function LimitRow({ label, value }: { label: string; value: number }) {
-  const color = value > 100 ? 'text-util-over' : value > 80 ? 'text-util-high' : value > 50 ? 'text-util-medium' : 'text-util-low';
-  const barColor = value > 100 ? 'bg-util-over' : value > 80 ? 'bg-util-high' : value > 50 ? 'bg-util-medium' : 'bg-util-low';
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className={cn("font-bold", color)}>{value}%</span>
-      </div>
-      <div className="h-2 rounded-full bg-secondary overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all", barColor)} style={{ width: `${Math.min(value, 100)}%` }} />
-      </div>
-    </div>
   );
 }
 
