@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Bot, TrendingUp, TrendingDown, AlertTriangle, ShieldAlert, Activity, Bell, ArrowRight, Plus } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
