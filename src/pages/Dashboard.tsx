@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { mockRisks } from '@/data/mockRisks';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { ZoneDonutWidget } from '@/components/risks/ZoneDonutWidget';
 
 // Heat map data types
 interface HeatMapCell {
@@ -103,11 +104,6 @@ export default function Dashboard() {
   const indirectUtil = Math.round(mockRisks.filter(r => r.indirectLosses.limit).reduce((s, r) => s + r.indirectLosses.utilization, 0) / Math.max(1, mockRisks.filter(r => r.indirectLosses.limit).length));
   const creditUtil = Math.round(mockRisks.filter(r => r.creditOpRisk.limit).reduce((s, r) => s + r.creditOpRisk.utilization, 0) / Math.max(1, mockRisks.filter(r => r.creditOpRisk.limit).length));
 
-  // Distribution by zones
-  const over100 = mockRisks.filter(r => r.cleanOpRisk.utilization > 100).length;
-  const over80 = mockRisks.filter(r => r.cleanOpRisk.utilization > 80 && r.cleanOpRisk.utilization <= 100).length;
-  const over50 = mockRisks.filter(r => r.cleanOpRisk.utilization > 50 && r.cleanOpRisk.utilization <= 80).length;
-  const greenZone = mockRisks.filter(r => r.cleanOpRisk.utilization <= 50).length;
 
   const handleCellClick = (cell: HeatMapCell) => {
     if (cell.risks.length === 0) return;
@@ -253,22 +249,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Distribution by zones */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Распределение по зонам</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ZoneRow label="≥ 100% лимита" count={over100} total={mockRisks.length} color="bg-util-over" />
-                <ZoneRow label="≥ 80%" count={over80} total={mockRisks.length} color="bg-util-high" />
-                <ZoneRow label="≥ 50%" count={over50} total={mockRisks.length} color="bg-util-medium" />
-                <ZoneRow label="Зелёная зона" count={greenZone} total={mockRisks.length} color="bg-util-low" />
-                <div className="flex justify-between pt-2 border-t border-border">
-                  <span className="text-xs font-medium text-muted-foreground">Всего</span>
-                  <span className="text-sm font-bold">{mockRisks.length}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Distribution by zones - donut */}
+            <ZoneDonutWidget />
           </div>
         </div>
 
@@ -435,18 +417,7 @@ function LimitRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ZoneRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", color)} />
-      <span className="text-sm text-muted-foreground flex-1">{label}</span>
-      <span className="text-sm font-bold">{count}</span>
-      <div className="w-20 h-1.5 rounded-full bg-secondary overflow-hidden">
-        <div className={cn("h-full rounded-full", color)} style={{ width: `${(count / total) * 100}%` }} />
-      </div>
-    </div>
-  );
-}
+
 
 function DynamicRow({ icon, label, count, color }: { icon: React.ReactNode; label: string; count: number; color: string }) {
   return (
