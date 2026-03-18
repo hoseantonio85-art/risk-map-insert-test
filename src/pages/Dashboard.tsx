@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Bot, TrendingUp, TrendingDown, AlertTriangle, ShieldAlert, Activity, Bell, ArrowRight, Plus } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -98,6 +99,8 @@ export default function Dashboard() {
     mockRisks.reduce((s, r) => s + r.cleanOpRisk.utilization, 0) / mockRisks.length
   );
   const criticalRisks = mockRisks.filter(r => r.riskLevel === 'Высокий').length;
+  const forecastDelta = totalForecast > 0 ? Math.round(((totalForecast - totalFactLosses) / totalFactLosses) * 100) : 0;
+  const forecastTrending = forecastDelta >= 0; // true = increasing (worse)
 
   // Limit utilization data
   const directUtil = Math.round(mockRisks.reduce((s, r) => s + r.cleanOpRisk.utilization, 0) / mockRisks.length);
@@ -148,7 +151,11 @@ export default function Dashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard title="Факт потерь" value={`${totalFactLosses.toFixed(1)} млн ₽`} />
-          <KpiCard title="Прогноз потерь" value={`${totalForecast.toFixed(1)} млн ₽`} />
+          <ForecastKpiCard
+            value={`${totalForecast.toFixed(1)} млн ₽`}
+            delta={forecastDelta}
+            trendingUp={forecastTrending}
+          />
           <KpiCard title="Утилизация лимита" value={`${avgUtilization}%`} highlight={avgUtilization > 80} />
           <KpiCard title="Критические риски" value={String(criticalRisks)} highlight={criticalRisks > 3} />
         </div>
@@ -397,6 +404,56 @@ function KpiCard({ title, value, highlight }: { title: string; value: string; hi
         <p className={cn("text-xl font-bold", highlight ? 'text-destructive' : 'text-foreground')}>
           {value}
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+const sparklineData = [
+  { v: 5.2 }, { v: 6.1 }, { v: 5.8 }, { v: 7.3 }, { v: 8.0 }, { v: 7.6 }, { v: 9.1 }, { v: 10.4 },
+];
+
+function ForecastKpiCard({ value, delta, trendingUp }: { value: string; delta: number; trendingUp: boolean }) {
+  const color = trendingUp ? 'hsl(var(--destructive))' : 'hsl(var(--primary))';
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">Прогноз потерь</p>
+        <div className="flex items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-foreground">{value}</p>
+            <p className={cn("text-[11px] font-medium mt-0.5", trendingUp ? 'text-destructive' : 'text-primary')}>
+              {delta >= 0 ? '+' : ''}{delta}% к факту
+            </p>
+          </div>
+          <div className="w-16 h-8 shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sparklineData}>
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke={color}
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={false}
+                />
+                {/* Forecast dot at end */}
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke="none"
+                  dot={(props: any) => {
+                    const { cx, cy, index } = props;
+                    if (index === sparklineData.length - 1) {
+                      return <circle cx={cx} cy={cy} r={2.5} fill={color} />;
+                    }
+                    return <circle r={0} />;
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
