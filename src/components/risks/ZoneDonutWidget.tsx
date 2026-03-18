@@ -219,7 +219,17 @@ export function ZoneDonutWidget() {
             ))}
           </div>
           <div className="mt-6">
-            <Button onClick={() => { setDrawerOpen(false); navigate('/risks'); }} className="w-full gap-2">
+            <Button onClick={() => {
+              setDrawerOpen(false);
+              if (selectedZone) {
+                const params = new URLSearchParams();
+                params.set('utilZone', selectedZone.shortLabel);
+                params.set('count', String(selectedZone.count));
+                navigate(`/risks?${params.toString()}`);
+              } else {
+                navigate('/risks');
+              }
+            }} className="w-full gap-2">
               Перейти к списку рисков
               <ArrowRight className="w-4 h-4" />
             </Button>
