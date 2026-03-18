@@ -670,7 +670,7 @@ const Index = () => {
             )}
 
             {/* Active filter chips */}
-            {(selectedProcessFilter || filterProbability || filterImpact) && (
+            {(selectedProcessFilter || filterProbability || filterImpact || filterUtilZone) && (
               <div className="flex items-center gap-2 pt-2 flex-wrap">
                 {heatmapCount !== null && (
                   <span className="text-sm text-muted-foreground">Найдено: {heatmapCount} рисков</span>
