@@ -198,7 +198,15 @@ export default function Dashboard() {
 
   const handleNavigateToRegistry = () => {
     setDrawerOpen(false);
-    navigate('/risks');
+    if (selectedCell) {
+      const params = new URLSearchParams();
+      params.set('probability', selectedCell.probability);
+      params.set('impact', selectedCell.impact);
+      params.set('count', String(selectedCell.risks.length));
+      navigate(`/risks?${params.toString()}`);
+    } else {
+      navigate('/risks');
+    }
   };
 
   // Loss sources
