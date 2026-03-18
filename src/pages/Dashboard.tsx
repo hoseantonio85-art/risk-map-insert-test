@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { mockRisks } from '@/data/mockRisks';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { ZoneDonutWidget } from '@/components/risks/ZoneDonutWidget';
 
 // Heat map data types
 interface HeatMapCell {
