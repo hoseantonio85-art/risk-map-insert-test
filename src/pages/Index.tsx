@@ -76,6 +76,9 @@ const Index = () => {
   const [filterProfile, setFilterProfile] = useState<string>('all');
   const [filterHasMeasures, setFilterHasMeasures] = useState<string>('all');
   const [filterHasLimit, setFilterHasLimit] = useState<string>('all');
+  const [filterProbability, setFilterProbability] = useState<string | null>(null);
+  const [filterImpact, setFilterImpact] = useState<string | null>(null);
+  const [heatmapCount, setHeatmapCount] = useState<number | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
 
