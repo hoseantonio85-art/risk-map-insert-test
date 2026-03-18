@@ -151,7 +151,11 @@ export default function Dashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard title="Факт потерь" value={`${totalFactLosses.toFixed(1)} млн ₽`} />
-          <KpiCard title="Прогноз потерь" value={`${totalForecast.toFixed(1)} млн ₽`} />
+          <ForecastKpiCard
+            value={`${totalForecast.toFixed(1)} млн ₽`}
+            delta={forecastDelta}
+            trendingUp={forecastTrending}
+          />
           <KpiCard title="Утилизация лимита" value={`${avgUtilization}%`} highlight={avgUtilization > 80} />
           <KpiCard title="Критические риски" value={String(criticalRisks)} highlight={criticalRisks > 3} />
         </div>
