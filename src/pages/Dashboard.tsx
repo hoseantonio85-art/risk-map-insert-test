@@ -409,55 +409,6 @@ function KpiCard({ title, value, highlight }: { title: string; value: string; hi
   );
 }
 
-const sparklineData = [
-  { v: 5.2 }, { v: 6.1 }, { v: 5.8 }, { v: 7.3 }, { v: 8.0 }, { v: 7.6 }, { v: 9.1 }, { v: 10.4 },
-];
-
-function ForecastKpiCard({ value, delta, trendingUp }: { value: string; delta: number; trendingUp: boolean }) {
-  const color = trendingUp ? 'hsl(var(--destructive))' : 'hsl(var(--primary))';
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-xs font-medium text-muted-foreground mb-1.5">Прогноз потерь</p>
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-xl font-bold text-foreground">{value}</p>
-            <p className={cn("text-[11px] font-medium mt-0.5", trendingUp ? 'text-destructive' : 'text-primary')}>
-              {delta >= 0 ? '+' : ''}{delta}% к факту
-            </p>
-          </div>
-          <div className="w-16 h-8 shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={sparklineData}>
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke={color}
-                  strokeWidth={1.5}
-                  dot={false}
-                  activeDot={false}
-                />
-                {/* Forecast dot at end */}
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke="none"
-                  dot={(props: any) => {
-                    const { cx, cy, index } = props;
-                    if (index === sparklineData.length - 1) {
-                      return <circle cx={cx} cy={cy} r={2.5} fill={color} />;
-                    }
-                    return <circle r={0} />;
-                  }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function LimitRow({ label, value }: { label: string; value: number }) {
   const color = value > 100 ? 'text-util-over' : value > 80 ? 'text-util-high' : value > 50 ? 'text-util-medium' : 'text-util-low';
