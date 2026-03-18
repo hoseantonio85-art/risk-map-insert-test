@@ -280,14 +280,14 @@ export default function Dashboard() {
         {/* Main analytical block — fixed 488px height */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4" style={{ height: 488 }}>
           {/* Heat Map */}
-          <Card className="flex flex-col overflow-hidden">
-            <CardHeader className="pb-1 pt-2.5 px-3">
+          <Card className="flex flex-col overflow-hidden h-full">
+            <CardHeader className="pb-0 pt-2 px-3 shrink-0">
               <CardTitle className="text-sm">Матрица рисков</CardTitle>
             </CardHeader>
-            <CardContent className="pb-2 px-3 pt-0 flex-1 flex flex-col justify-center">
-              <div className="flex">
+            <CardContent className="pb-1.5 px-3 pt-0 flex-1 flex flex-col justify-center min-h-0">
+              <div className="flex flex-1 min-h-0">
                 {/* Y-axis labels */}
-                <div className="flex flex-col justify-between pr-1 py-0.5" style={{ width: 72 }}>
+                <div className="flex flex-col justify-between pr-1" style={{ width: 68 }}>
                   {[...probLabels].reverse().map((label) => (
                     <div key={label} className="flex-1 flex items-center">
                       <span className="text-[9px] text-muted-foreground leading-tight text-right w-full">{label}</span>
@@ -296,8 +296,8 @@ export default function Dashboard() {
                 </div>
 
                 {/* Grid */}
-                <div className="flex-1">
-                  <div className="grid grid-cols-4 gap-0.5">
+                <div className="flex-1 flex flex-col justify-center min-h-0">
+                  <div className="grid grid-cols-4 grid-rows-5 gap-px flex-1 min-h-0" style={{ maxHeight: 380 }}>
                     {[...heatMap].reverse().map((row) =>
                       row.map((cell) => (
                         <Tooltip key={`${cell.probIdx}-${cell.impIdx}`}>
@@ -305,7 +305,7 @@ export default function Dashboard() {
                             <button
                               onClick={() => handleCellClick(cell)}
                               className={cn(
-                                'aspect-[5/3] rounded flex items-center justify-center text-xs font-extrabold transition-all border',
+                                'rounded flex items-center justify-center text-xs font-extrabold transition-all border w-full h-full',
                                 getCellColor(cell.probIdx, cell.impIdx),
                                 getCellBorderColor(cell.probIdx, cell.impIdx),
                                 cell.risks.length > 0
@@ -341,7 +341,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* X-axis labels */}
-                  <div className="grid grid-cols-4 gap-0.5 mt-0.5">
+                  <div className="grid grid-cols-4 gap-px mt-0.5 shrink-0">
                     {impLabels.map((label) => (
                       <div key={label} className="text-center">
                         <span className="text-[9px] text-muted-foreground">{label}</span>
@@ -352,7 +352,7 @@ export default function Dashboard() {
               </div>
 
               {/* Axis titles */}
-              <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
+              <div className="flex justify-between mt-1 text-[9px] text-muted-foreground shrink-0">
                 <span className="italic">← Вероятность</span>
                 <span className="italic">Ущерб →</span>
               </div>

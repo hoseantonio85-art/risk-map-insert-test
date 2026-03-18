@@ -99,7 +99,7 @@ export function ZoneDonutWidget() {
   return (
     <>
       <Card className="flex flex-col h-full overflow-hidden">
-        <CardHeader className="pb-1 pt-2.5 px-4 shrink-0">
+        <CardHeader className="pb-0 pt-2 px-4 shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">Распределение по зонам</CardTitle>
             <div className="flex items-center gap-1.5">
@@ -115,16 +115,16 @@ export function ZoneDonutWidget() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-4 pb-3 pt-0 flex-1 flex flex-col items-center justify-center gap-1 min-h-0">
+        <CardContent className="px-4 pb-2 pt-0 flex-1 flex flex-col items-center justify-center gap-0 min-h-0">
           {/* Donut — large */}
-          <div className="relative w-[200px] h-[200px] shrink-0">
-            <PieChart width={200} height={200}>
+          <div className="relative w-[220px] h-[220px] shrink-0">
+            <PieChart width={220} height={220}>
               <Pie
                 data={chartData}
-                cx={95}
-                cy={95}
-                innerRadius={52}
-                outerRadius={82}
+                cx={105}
+                cy={105}
+                innerRadius={56}
+                outerRadius={90}
                 paddingAngle={2}
                 dataKey="value"
                 activeIndex={activeIndex !== null ? activeIndex : undefined}
@@ -144,13 +144,13 @@ export function ZoneDonutWidget() {
               <span className="text-[10px] text-muted-foreground leading-tight">
                 {showForecast ? 'Прогноз' : 'Потери'}
               </span>
-              <span className="text-sm font-bold leading-tight">{totalLoss.toFixed(1)}</span>
+              <span className="text-base font-bold leading-tight">{totalLoss.toFixed(1)}</span>
               <span className="text-[10px] text-muted-foreground leading-tight">млн ₽</span>
             </div>
           </div>
 
           {/* Legend */}
-          <div className="w-full space-y-0.5 shrink-0">
+          <div className="w-full space-y-px shrink-0">
             {sortedZones.map((zone, i) => {
               const lossVal = showForecast ? zone.forecastLoss : zone.totalLoss;
               const pct = totalLoss > 0 ? Math.round((lossVal / totalLoss) * 100) : 0;
@@ -175,7 +175,7 @@ export function ZoneDonutWidget() {
                 </div>
               );
             })}
-            <div className="flex justify-between pt-1 border-t border-border px-2">
+            <div className="flex justify-between pt-0.5 border-t border-border px-2 mt-0.5">
               <span className="text-[11px] font-medium text-muted-foreground">Всего</span>
               <span className="text-xs font-bold">{mockRisks.length}</span>
             </div>
