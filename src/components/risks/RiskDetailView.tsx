@@ -455,7 +455,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                   )}
                 </div>
               </div>
-              </div>
             ) : (
               <div className="p-4 rounded-xl border border-border bg-card space-y-3">
                 <h3 className="font-semibold text-sm">Согласующие</h3>
