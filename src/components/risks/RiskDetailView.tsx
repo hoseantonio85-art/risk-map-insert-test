@@ -249,17 +249,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </div>
 
-            {/* Risk evaluation — main content */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Качественные потери</span>
-                <span className="text-sm font-medium">{risk.qualitativeLosses || 'Нет'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Уровень</span>
-                <RiskLevelBadge level={risk.riskLevel} />
-              </div>
-            </div>
 
             {/* Nav chips */}
             <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
@@ -311,6 +300,22 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                 ))}
               </div>
             </section>
+
+            {/* Qualitative assessment */}
+            <div className="p-4 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Качественные потери</p>
+                    <p className="text-sm font-semibold">{risk.qualitativeLosses || 'Нет'}</p>
+                  </div>
+                </div>
+                <RiskLevelBadge level={risk.riskLevel} />
+              </div>
+            </div>
 
             {/* Scenarios */}
             <section id="scenarios" className="space-y-3">
