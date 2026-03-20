@@ -406,32 +406,69 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             </div>
 
             {sidebarTab === 'info' ? (
-              <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                <h3 className="font-semibold text-sm">Детали</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Статус</span>
-                    <StatusTag status={risk.status} />
+              <div className="space-y-4">
+                {/* Оценка риска */}
+                <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                  <h3 className="font-semibold text-sm">Оценка риска</h3>
+                  <div className="space-y-2.5 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Качественные потери</span>
+                      <span className="font-medium">{risk.qualitativeLosses || 'Нет'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Уровень</span>
+                      <RiskLevelBadge level={risk.riskLevel} />
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Источник</span>
-                    <span>{risk.source}</span>
+                </div>
+
+                {/* Реагирование */}
+                <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                  <h3 className="font-semibold text-sm">Реагирование</h3>
+                  <div className="space-y-2.5 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Стратегия</span>
+                      <span className="font-medium">{risk.responseStrategy}</span>
+                    </div>
+                    {risk.responseStrategy && (
+                      <p className="text-xs text-muted-foreground">
+                        {risk.responseStrategy === 'Принять' && 'Риск осознанно принят. Мониторинг без активных мер.'}
+                        {risk.responseStrategy === 'Минимизировать' && 'Снижение вероятности или ущерба через мероприятия.'}
+                        {risk.responseStrategy === 'Передать' && 'Перенос последствий на третью сторону.'}
+                        {risk.responseStrategy === 'Избежать' && 'Отказ от деятельности, порождающей риск.'}
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Меры</span>
+                      <span className="font-medium">{mockMeasures.length}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Стратегия</span>
-                    <span className="font-medium">{risk.responseStrategy}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Подразделение</span>
-                    <span className="text-right max-w-[160px] text-xs">{risk.subdivision}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Автор</span>
-                    <span className="text-right text-xs">{risk.author}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Создан</span>
-                    <span>{risk.createdAt}</span>
+                </div>
+
+                {/* Детали */}
+                <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                  <h3 className="font-semibold text-sm">Детали</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Статус</span>
+                      <StatusTag status={risk.status} />
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Источник</span>
+                      <span>{risk.source}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Подразделение</span>
+                      <span className="text-right max-w-[160px] text-xs">{risk.subdivision}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Автор</span>
+                      <span className="text-right text-xs">{risk.author}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Создан</span>
+                      <span>{risk.createdAt}</span>
+                    </div>
                   </div>
                 </div>
               </div>
