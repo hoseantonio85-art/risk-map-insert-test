@@ -249,17 +249,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </div>
 
-            {/* Risk evaluation — main content */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Качественные потери</span>
-                <span className="text-sm font-medium">{risk.qualitativeLosses || 'Нет'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Уровень</span>
-                <RiskLevelBadge level={risk.riskLevel} />
-              </div>
-            </div>
 
             {/* Nav chips */}
             <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
