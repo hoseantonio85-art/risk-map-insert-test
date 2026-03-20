@@ -1023,12 +1023,12 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
-              {/* === Оценка риска === */}
-              <div className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Оценка риска</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Качественные потери</Label>
+              {/* === Параметры риска === */}
+              <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+                <h3 className="text-base font-semibold">Параметры риска</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Качественные потери</Label>
                     <Select value={qualitativeLosses} onValueChange={setQualitativeLosses}>
                       <SelectTrigger className="bg-background">
                         <SelectValue placeholder="Выберите тип" />
@@ -1040,38 +1040,33 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Уровень потерь</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Уровень потерь</Label>
                     <div className="pt-1">
                       <RiskLevelBadge level={calculatedRiskLevel} />
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* === Реагирование === */}
-              <div className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Реагирование</h3>
-                <div className="space-y-2">
-                  <Label>Стратегия реагирования<span className="text-destructive">*</span></Label>
-                  <Select value={strategy} onValueChange={setStrategy}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Выберите стратегию" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      {strategies.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {strategy && (
-                    <p className="text-xs text-muted-foreground pt-1">
-                      {strategy === 'Принять' && 'Риск осознанно принят. Мониторинг без активных мер.'}
-                      {strategy === 'Минимизировать' && 'Снижение вероятности или ущерба через мероприятия и контроли.'}
-                      {strategy === 'Передать' && 'Перенос последствий на третью сторону (страхование, аутсорсинг).'}
-                      {strategy === 'Избежать' && 'Полный отказ от деятельности, порождающей данный риск.'}
-                    </p>
-                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Стратегия реагирования<span className="text-destructive">*</span></Label>
+                    <Select value={strategy} onValueChange={setStrategy}>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Выберите стратегию" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {strategies.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {strategy && (
+                      <p className="text-[11px] leading-tight text-muted-foreground/70">
+                        {strategy === 'Принять' && 'Риск принят. Мониторинг без активных мер.'}
+                        {strategy === 'Минимизировать' && 'Снижение вероятности или ущерба.'}
+                        {strategy === 'Передать' && 'Перенос последствий на третью сторону.'}
+                        {strategy === 'Избежать' && 'Отказ от деятельности, порождающей риск.'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
