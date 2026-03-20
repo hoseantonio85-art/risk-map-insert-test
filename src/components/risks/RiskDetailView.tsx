@@ -301,6 +301,22 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </section>
 
+            {/* Qualitative assessment */}
+            <div className="p-4 rounded-xl border border-border bg-card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Качественные потери</p>
+                    <p className="text-sm font-semibold">{risk.qualitativeLosses || 'Нет'}</p>
+                  </div>
+                </div>
+                <RiskLevelBadge level={risk.riskLevel} />
+              </div>
+            </div>
+
             {/* Scenarios */}
             <section id="scenarios" className="space-y-3">
               <h2 className="text-base font-semibold">Сценарии реализации риска</h2>
