@@ -223,7 +223,7 @@ const Index = () => {
       });
     }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
+  }, [risks, appMode, monitoringChip, campaignChip, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
