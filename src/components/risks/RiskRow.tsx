@@ -210,6 +210,7 @@ function LossChip({
 export function RiskRow({
   risk,
   mode,
+  appMode = 'monitoring',
   draftLimits,
   onLimitChange,
   onRiskClick,
@@ -219,6 +220,7 @@ export function RiskRow({
 }: RiskRowProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isEditMode = mode === 'edit';
+  const isCampaign = appMode === 'campaign';
 
   return (
     <div className={cn(
@@ -242,7 +244,14 @@ export function RiskRow({
             {risk.id}
           </button>
           <RiskLevelBadge level={risk.riskLevel} />
-          <StatusTag status={risk.status} />
+          {isCampaign && risk.campaignStatus ? (
+            <CampaignStatusTag status={risk.campaignStatus} />
+          ) : risk.monitoringStatus ? (
+            <MonitoringStatusTag status={risk.monitoringStatus} />
+          ) : (
+            <StatusTag status={risk.status} />
+          )}
+          {!isCampaign && risk.signals?.map((s) => <SignalBadge key={s} signal={s} />)}
           <div className="flex-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
