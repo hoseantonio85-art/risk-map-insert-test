@@ -34,6 +34,9 @@ type ViewMode = 'list' | 'processes';
 type ScreenMode = 'view' | 'edit';
 type RegistryMode = 'registry' | 'actions' | 'mirroring';
 type ActionChip = 'evaluate' | 'approve' | 'correct';
+type AppMode = 'monitoring' | 'campaign';
+type MonitoringChip = 'all' | 'actions' | 'rp' | 'correction' | 'high' | 'mirroring';
+type CampaignChip = 'all' | 'draft' | 'review' | 'returned' | 'approved' | 'excluded';
 
 interface DraftLimits {
   [riskId: string]: {
