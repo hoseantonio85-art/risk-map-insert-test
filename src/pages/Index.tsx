@@ -73,6 +73,13 @@ const Index = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedRiskIds, setSelectedRiskIds] = useState<Set<string>>(new Set());
 
+  // App mode (Monitoring / Limit Campaign)
+  const [appMode, setAppMode] = useState<AppMode>('monitoring');
+  const campaignDeadline = '30.06.2026';
+  const campaignOpen = true;
+  const [monitoringChip, setMonitoringChip] = useState<MonitoringChip>('all');
+  const [campaignChip, setCampaignChip] = useState<CampaignChip>('all');
+
   // Filter state
   const [registryMode, setRegistryMode] = useState<RegistryMode>('registry');
   const [activeActionChip, setActiveActionChip] = useState<ActionChip | null>(null);
