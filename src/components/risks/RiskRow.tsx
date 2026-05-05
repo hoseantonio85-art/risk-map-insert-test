@@ -47,6 +47,45 @@ function StatusTag({ status }: { status: Risk['status'] }) {
   );
 }
 
+function MonitoringStatusTag({ status }: { status: NonNullable<Risk['monitoringStatus']> }) {
+  const colorMap: Record<NonNullable<Risk['monitoringStatus']>, string> = {
+    'Утверждён': 'text-primary border-primary/40 bg-primary/5',
+    'На оценке': 'text-foreground border-border bg-muted/40',
+    'Согласование РП': 'text-orange-500 border-orange-300 bg-orange-50',
+    'Корректировка': 'text-amber-700 border-amber-300 bg-amber-50',
+    'Требует внимания': 'text-destructive border-destructive/30 bg-destructive/5',
+  };
+  return (
+    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium border leading-none", colorMap[status])}>
+      {status}
+    </span>
+  );
+}
+
+function CampaignStatusTag({ status }: { status: NonNullable<Risk['campaignStatus']> }) {
+  const colorMap: Record<NonNullable<Risk['campaignStatus']>, string> = {
+    'Черновик лимита': 'text-muted-foreground border-muted-foreground/40 bg-muted/30',
+    'На согласовании': 'text-orange-600 border-orange-300 bg-orange-50',
+    'Возвращён на корректировку': 'text-amber-700 border-amber-300 bg-amber-50',
+    'Согласован': 'text-violet-700 border-violet-300 bg-violet-50',
+    'Утверждён': 'text-primary border-primary/40 bg-primary/5',
+    'Исключён из кампании': 'text-muted-foreground border-muted-foreground/30 bg-muted/30 line-through',
+  };
+  return (
+    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium border leading-none", colorMap[status])}>
+      {status}
+    </span>
+  );
+}
+
+function SignalBadge({ signal }: { signal: NonNullable<Risk['signals']>[number] }) {
+  return (
+    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium border leading-none text-destructive border-destructive/30 bg-destructive/5">
+      {signal}
+    </span>
+  );
+}
+
 function RiskLevelBadge({ level }: { level: Risk['riskLevel'] }) {
   const colorMap: Record<Risk['riskLevel'], string> = {
     'Низкий': 'bg-primary/15 text-primary',
