@@ -13,10 +13,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 type ScreenMode = 'view' | 'edit';
+type AppMode = 'monitoring' | 'campaign';
 
 interface RiskRowProps {
   risk: Risk;
   mode: ScreenMode;
+  appMode?: AppMode;
   draftLimits?: {
     cleanOpRisk: number;
     creditOpRisk: number;
