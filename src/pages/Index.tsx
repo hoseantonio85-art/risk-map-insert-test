@@ -888,6 +888,7 @@ const Index = () => {
                     key={risk.id}
                     risk={risk}
                     mode={screenMode}
+                    appMode={appMode}
                     draftLimits={screenMode === 'edit' ? draftLimits[risk.id] : undefined}
                     onLimitChange={handleLimitChange}
                     onRiskClick={handleRiskClick}
