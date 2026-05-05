@@ -222,6 +222,33 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         <div className="grid grid-cols-[1fr,320px] gap-8 px-2">
           {/* Main content */}
           <div className="space-y-6">
+            {/* RP comment when monitoring status is Корректировка */}
+            {risk.monitoringStatus === 'Корректировка' && risk.rpComment && (
+              <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/60">
+                <p className="text-sm font-semibold text-amber-900 mb-1">Комментарий риск-партнёра</p>
+                <p className="text-sm text-amber-900/90">{risk.rpComment}</p>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" variant="default" onClick={() => onOpenWizard?.(risk)}>Исправить оценку</Button>
+                  <Button size="sm" variant="outline">Отправить повторно</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Risk evaluation */}
+            <section className="space-y-2">
+              <h2 className="text-base font-semibold">Оценка риска</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-xl border border-border bg-card">
+                  <p className="text-xs text-muted-foreground mb-1">Качественные потери</p>
+                  <p className="text-sm font-semibold">{risk.qualitativeLosses || 'Нет'}</p>
+                </div>
+                <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Уровень потерь</p>
+                  <RiskLevelBadge level={risk.riskLevel} />
+                </div>
+              </div>
+            </section>
+
             {/* AI Alert */}
             <div className="p-4 rounded-xl border" style={{
               backgroundColor: 'hsl(var(--ai-alert))',
