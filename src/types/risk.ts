@@ -28,7 +28,47 @@ export interface Risk {
   author: string;
   createdAt: string;
   source: string;
+
+  // Monitoring workflow (optional)
+  monitoringStatus?: MonitoringStatus;
+  signals?: MonitoringSignal[];
+  rpComment?: string;
+  riskPartner?: string;
+  riskOwner?: string;
+  sentToRpAt?: string;
+
+  // Limit campaign (optional)
+  campaignStatus?: CampaignStatus;
+  campaignComment?: string;
+  proposedLimits?: {
+    cleanOpRisk?: number;
+    creditOpRisk?: number;
+    indirectLosses?: number;
+    potentialLosses?: number;
+    justification?: string;
+  };
 }
+
+export type MonitoringStatus =
+  | 'Утверждён'
+  | 'На оценке'
+  | 'Согласование РП'
+  | 'Корректировка'
+  | 'Требует внимания';
+
+export type MonitoringSignal =
+  | 'Лимит превышен'
+  | 'Уровень риска вырос'
+  | 'Новые инциденты'
+  | 'Прогноз ухудшился';
+
+export type CampaignStatus =
+  | 'Черновик лимита'
+  | 'На согласовании'
+  | 'Возвращён на корректировку'
+  | 'Согласован'
+  | 'Утверждён'
+  | 'Исключён из кампании';
 
 export interface LossLimit {
   value: number;
