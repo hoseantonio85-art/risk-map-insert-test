@@ -130,19 +130,38 @@ const Index = () => {
   const filteredRisks = useMemo(() => {
     let filtered = risks;
 
-    // Registry mode filtering
-    if (registryMode === 'actions') {
+    // App mode filtering
+    if (appMode === 'monitoring') {
+      if (monitoringChip === 'actions') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'На оценке' || r.monitoringStatus === 'Корректировка' || r.monitoringStatus === 'Требует внимания');
+      } else if (monitoringChip === 'rp') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'Согласование РП');
+      } else if (monitoringChip === 'correction') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'Корректировка');
+      } else if (monitoringChip === 'high') {
+        filtered = filtered.filter(r => r.riskLevel === 'Высокий');
+      } else if (monitoringChip === 'mirroring') {
+        filtered = filtered.filter(r => r.mirrors && r.mirrors.length > 0);
+      }
+    } else if (appMode === 'campaign') {
+      // only risks participating in the campaign
+      filtered = filtered.filter(r => !!r.campaignStatus);
+      if (campaignChip === 'draft') filtered = filtered.filter(r => r.campaignStatus === 'Черновик лимита');
+      else if (campaignChip === 'review') filtered = filtered.filter(r => r.campaignStatus === 'На согласовании');
+      else if (campaignChip === 'returned') filtered = filtered.filter(r => r.campaignStatus === 'Возвращён на корректировку');
+      else if (campaignChip === 'approved') filtered = filtered.filter(r => r.campaignStatus === 'Согласован' || r.campaignStatus === 'Утверждён');
+      else if (campaignChip === 'excluded') filtered = filtered.filter(r => r.campaignStatus === 'Исключён из кампании');
+    }
+
+    // Registry mode filtering (legacy — only in monitoring)
+    if (appMode === 'monitoring' && registryMode === 'actions') {
       if (activeActionChip === 'evaluate') {
         filtered = filtered.filter(r => r.status === 'Черновик' || r.status === 'В работе');
       } else if (activeActionChip === 'approve') {
         filtered = filtered.filter(r => r.status === 'На согласовании');
       } else if (activeActionChip === 'correct') {
         filtered = filtered.filter(r => r.status === 'В работе');
-      } else {
-        filtered = filtered.filter(r => r.status === 'В работе' || r.status === 'На согласовании' || r.status === 'Черновик');
       }
-    } else if (registryMode === 'mirroring') {
-      filtered = filtered.filter(r => r.mirrors && r.mirrors.length > 0);
     }
 
     // Quick filter: high risk
