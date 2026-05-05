@@ -588,60 +588,144 @@ const Index = () => {
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
             {/* Section title */}
-            <h2 className="text-base font-semibold text-foreground">Потери от операционных рисков</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              {appMode === 'campaign' ? 'Лимитная кампания 2026' : 'Потери от операционных рисков'}
+            </h2>
 
             {/* Metrics */}
-            <div className="grid grid-cols-4 gap-4">
-              <MetricCard
-                title="Чистые"
-                value={fmtMln(aggregates.cleanOpRisk.total)}
-                utilization={aggregates.cleanOpRisk.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.cleanOpRisk.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.cleanOpRisk.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Кредитные"
-                value={fmtMln(aggregates.creditOpRisk.total)}
-                utilization={aggregates.creditOpRisk.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.creditOpRisk.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.creditOpRisk.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Косвенные"
-                value={fmtMln(aggregates.indirectLosses.total)}
-                utilization={aggregates.indirectLosses.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.indirectLosses.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.indirectLosses.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Потенциальные"
-                value={fmtMln(aggregates.potentialLosses.total)}
-                utilization={0}
-                showDonut={false}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Чистые', value: `${fmtMln(aggregates.potentialLosses.cleanBreakdown)}` },
-                  { label: 'Кредитные', value: `${fmtMln(aggregates.potentialLosses.creditBreakdown)}` },
-                  { label: 'Косвенные', value: `${fmtMln(aggregates.potentialLosses.indirectBreakdown)}` },
-                ]}
-              />
-            </div>
+            {appMode === 'monitoring' ? (
+              <div className="grid grid-cols-4 gap-4">
+                <MetricCard
+                  title="Чистые"
+                  value={fmtMln(aggregates.cleanOpRisk.total)}
+                  utilization={aggregates.cleanOpRisk.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.cleanOpRisk.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.cleanOpRisk.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Кредитные"
+                  value={fmtMln(aggregates.creditOpRisk.total)}
+                  utilization={aggregates.creditOpRisk.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.creditOpRisk.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.creditOpRisk.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Косвенные"
+                  value={fmtMln(aggregates.indirectLosses.total)}
+                  utilization={aggregates.indirectLosses.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.indirectLosses.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.indirectLosses.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Потенциальные"
+                  value={fmtMln(aggregates.potentialLosses.total)}
+                  utilization={0}
+                  showDonut={false}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Чистые', value: `${fmtMln(aggregates.potentialLosses.cleanBreakdown)}` },
+                    { label: 'Кредитные', value: `${fmtMln(aggregates.potentialLosses.creditBreakdown)}` },
+                    { label: 'Косвенные', value: `${fmtMln(aggregates.potentialLosses.indirectBreakdown)}` },
+                  ]}
+                />
+              </div>
+            ) : (
+              (() => {
+                const campaignRisks = risks.filter(r => !!r.campaignStatus);
+                const sumProposed = campaignRisks.reduce((s, r) => s + (r.proposedLimits?.cleanOpRisk ?? r.cleanOpRisk.limit ?? 0) + (r.proposedLimits?.creditOpRisk ?? r.creditOpRisk.limit ?? 0) + (r.proposedLimits?.indirectLosses ?? r.indirectLosses.limit ?? 0), 0);
+                const changed = campaignRisks.filter(r => {
+                  const p = r.proposedLimits;
+                  if (!p) return false;
+                  return (p.cleanOpRisk ?? r.cleanOpRisk.limit) !== r.cleanOpRisk.limit
+                      || (p.creditOpRisk ?? r.creditOpRisk.limit) !== r.creditOpRisk.limit
+                      || (p.indirectLosses ?? r.indirectLosses.limit) !== r.indirectLosses.limit;
+                }).length;
+                const review = campaignRisks.filter(r => r.campaignStatus === 'На согласовании').length;
+                const returned = campaignRisks.filter(r => r.campaignStatus === 'Возвращён на корректировку').length;
+                const Card = ({ title, value, accent = false }: { title: string; value: string | number; accent?: boolean }) => (
+                  <div className={cn("p-4 rounded-xl border bg-card", accent ? "border-violet-200 bg-violet-50/40" : "border-border")}>
+                    <p className="text-xs text-muted-foreground mb-1">{title}</p>
+                    <p className={cn("text-xl font-semibold", accent && "text-violet-900")}>{value}</p>
+                  </div>
+                );
+                return (
+                  <div className="grid grid-cols-4 gap-4">
+                    <Card title="Сумма лимитов 2026" value={fmtMln(Math.round(sumProposed * 10) / 10)} accent />
+                    <Card title="Изменено лимитов" value={changed} />
+                    <Card title="На согласовании" value={review} />
+                    <Card title="Требуют корректировки" value={returned} />
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Mode-specific filter chips */}
+            {appMode === 'monitoring' ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {([
+                  { v: 'all', l: 'Все риски' },
+                  { v: 'actions', l: 'Требуют действий' },
+                  { v: 'rp', l: 'Согласование РП' },
+                  { v: 'correction', l: 'Корректировка' },
+                  { v: 'high', l: 'Высокий уровень' },
+                  { v: 'mirroring', l: 'Зеркалирование' },
+                ] as const).map(c => (
+                  <button
+                    key={c.v}
+                    onClick={() => setMonitoringChip(c.v)}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                      monitoringChip === c.v
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {c.l}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {([
+                  { v: 'all', l: 'Все' },
+                  { v: 'draft', l: 'Черновики' },
+                  { v: 'review', l: 'На согласовании' },
+                  { v: 'returned', l: 'Возвращены' },
+                  { v: 'approved', l: 'Согласованы' },
+                  { v: 'excluded', l: 'Исключены' },
+                ] as const).map(c => (
+                  <button
+                    key={c.v}
+                    onClick={() => setCampaignChip(c.v)}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                      campaignChip === c.v
+                        ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {c.l}
+                  </button>
+                ))}
+              </div>
+            )}
+
 
             {/* === CONTROL BAR — Line 1 === */}
             <div className="flex items-center gap-2 h-11">
