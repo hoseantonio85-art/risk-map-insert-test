@@ -34,6 +34,9 @@ type ViewMode = 'list' | 'processes';
 type ScreenMode = 'view' | 'edit';
 type RegistryMode = 'registry' | 'actions' | 'mirroring';
 type ActionChip = 'evaluate' | 'approve' | 'correct';
+type AppMode = 'monitoring' | 'campaign';
+type MonitoringChip = 'all' | 'actions' | 'rp' | 'correction' | 'high' | 'mirroring';
+type CampaignChip = 'all' | 'draft' | 'review' | 'returned' | 'approved' | 'excluded';
 
 interface DraftLimits {
   [riskId: string]: {
@@ -69,6 +72,13 @@ const Index = () => {
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedRiskIds, setSelectedRiskIds] = useState<Set<string>>(new Set());
+
+  // App mode (Monitoring / Limit Campaign)
+  const [appMode, setAppMode] = useState<AppMode>('monitoring');
+  const campaignDeadline = '30.06.2026';
+  const campaignOpen = true;
+  const [monitoringChip, setMonitoringChip] = useState<MonitoringChip>('all');
+  const [campaignChip, setCampaignChip] = useState<CampaignChip>('all');
 
   // Filter state
   const [registryMode, setRegistryMode] = useState<RegistryMode>('registry');
@@ -120,19 +130,38 @@ const Index = () => {
   const filteredRisks = useMemo(() => {
     let filtered = risks;
 
-    // Registry mode filtering
-    if (registryMode === 'actions') {
+    // App mode filtering
+    if (appMode === 'monitoring') {
+      if (monitoringChip === 'actions') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'На оценке' || r.monitoringStatus === 'Корректировка' || r.monitoringStatus === 'Требует внимания');
+      } else if (monitoringChip === 'rp') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'Согласование РП');
+      } else if (monitoringChip === 'correction') {
+        filtered = filtered.filter(r => r.monitoringStatus === 'Корректировка');
+      } else if (monitoringChip === 'high') {
+        filtered = filtered.filter(r => r.riskLevel === 'Высокий');
+      } else if (monitoringChip === 'mirroring') {
+        filtered = filtered.filter(r => r.mirrors && r.mirrors.length > 0);
+      }
+    } else if (appMode === 'campaign') {
+      // only risks participating in the campaign
+      filtered = filtered.filter(r => !!r.campaignStatus);
+      if (campaignChip === 'draft') filtered = filtered.filter(r => r.campaignStatus === 'Черновик лимита');
+      else if (campaignChip === 'review') filtered = filtered.filter(r => r.campaignStatus === 'На согласовании');
+      else if (campaignChip === 'returned') filtered = filtered.filter(r => r.campaignStatus === 'Возвращён на корректировку');
+      else if (campaignChip === 'approved') filtered = filtered.filter(r => r.campaignStatus === 'Согласован' || r.campaignStatus === 'Утверждён');
+      else if (campaignChip === 'excluded') filtered = filtered.filter(r => r.campaignStatus === 'Исключён из кампании');
+    }
+
+    // Registry mode filtering (legacy — only in monitoring)
+    if (appMode === 'monitoring' && registryMode === 'actions') {
       if (activeActionChip === 'evaluate') {
         filtered = filtered.filter(r => r.status === 'Черновик' || r.status === 'В работе');
       } else if (activeActionChip === 'approve') {
         filtered = filtered.filter(r => r.status === 'На согласовании');
       } else if (activeActionChip === 'correct') {
         filtered = filtered.filter(r => r.status === 'В работе');
-      } else {
-        filtered = filtered.filter(r => r.status === 'В работе' || r.status === 'На согласовании' || r.status === 'Черновик');
       }
-    } else if (registryMode === 'mirroring') {
-      filtered = filtered.filter(r => r.mirrors && r.mirrors.length > 0);
     }
 
     // Quick filter: high risk
@@ -194,7 +223,7 @@ const Index = () => {
       });
     }
     return filtered;
-  }, [risks, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
+  }, [risks, appMode, monitoringChip, campaignChip, registryMode, activeActionChip, showHighRiskOnly, searchQuery, selectedSubdivision, filterStatus, filterRiskLevels, filterStrategy, filterProfile, filterHasLimit, selectedProcessFilter, filterProbability, filterImpact, filterUtilZone]);
 
   const riskLevelPriority: Record<string, number> = { 'Низкий': 0, 'Средний': 1, 'Высокий': 2, 'Критичный': 3 };
 
@@ -474,13 +503,40 @@ const Index = () => {
     <MainLayout>
       <div className="flex flex-col h-full">
         {/* === HEADER === */}
-        <div className="px-6 py-4 border-b border-border bg-card">
-          <div className="flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border bg-card space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold">Карта рисков</h1>
               {screenMode === 'edit' && (
                 <Badge variant="default" className="gap-1.5">Режим редактирования</Badge>
               )}
+
+              {/* Mode switcher */}
+              <div className="ml-2 inline-flex items-center rounded-lg border border-border bg-muted/40 p-1 h-9">
+                <button
+                  onClick={() => setAppMode('monitoring')}
+                  className={cn(
+                    "px-3 py-1 text-sm font-medium rounded-md transition-all",
+                    appMode === 'monitoring' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Мониторинг
+                </button>
+                <button
+                  onClick={() => setAppMode('campaign')}
+                  className={cn(
+                    "px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
+                    appMode === 'campaign' ? "bg-violet-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Лимитная кампания
+                  {campaignOpen && (
+                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold", appMode === 'campaign' ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700")}>
+                      открыта
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {screenMode === 'view' && (
@@ -508,66 +564,168 @@ const Index = () => {
               )}
             </div>
           </div>
+
+          {/* Context banner */}
+          {appMode === 'monitoring' ? (
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+              <div>
+                <span className="text-foreground">Мониторинг активен постоянно.</span> Здесь отображается текущая утилизация лимитов, инциденты и изменения уровня риска.
+                {campaignOpen && (
+                  <div className="mt-0.5 text-[11px] text-muted-foreground/80">Лимитная кампания сейчас открыта, но мониторинг продолжается.</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-violet-600 text-white">Открыта</span>
+              <span><span className="font-medium">Лимитная кампания</span> открыта до {campaignDeadline}. Здесь согласуются лимиты на следующий период.</span>
+            </div>
+          )}
         </div>
 
         {/* === SCROLLABLE CONTENT === */}
         <div className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
             {/* Section title */}
-            <h2 className="text-base font-semibold text-foreground">Потери от операционных рисков</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              {appMode === 'campaign' ? 'Лимитная кампания 2026' : 'Потери от операционных рисков'}
+            </h2>
 
             {/* Metrics */}
-            <div className="grid grid-cols-4 gap-4">
-              <MetricCard
-                title="Чистые"
-                value={fmtMln(aggregates.cleanOpRisk.total)}
-                utilization={aggregates.cleanOpRisk.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.cleanOpRisk.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.cleanOpRisk.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Кредитные"
-                value={fmtMln(aggregates.creditOpRisk.total)}
-                utilization={aggregates.creditOpRisk.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.creditOpRisk.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.creditOpRisk.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Косвенные"
-                value={fmtMln(aggregates.indirectLosses.total)}
-                utilization={aggregates.indirectLosses.utilization}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Лимит', value: `${fmtMln(aggregates.indirectLosses.limit)}` },
-                  { label: 'Прогноз', value: `${fmtMln(aggregates.indirectLosses.forecast)}` },
-                  { label: 'Лимит после ребаджета', value: '—' },
-                ]}
-              />
-              <MetricCard
-                title="Потенциальные"
-                value={fmtMln(aggregates.potentialLosses.total)}
-                utilization={0}
-                showDonut={false}
-                isExpanded={widgetsExpanded}
-                onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
-                detailRows={[
-                  { label: 'Чистые', value: `${fmtMln(aggregates.potentialLosses.cleanBreakdown)}` },
-                  { label: 'Кредитные', value: `${fmtMln(aggregates.potentialLosses.creditBreakdown)}` },
-                  { label: 'Косвенные', value: `${fmtMln(aggregates.potentialLosses.indirectBreakdown)}` },
-                ]}
-              />
-            </div>
+            {appMode === 'monitoring' ? (
+              <div className="grid grid-cols-4 gap-4">
+                <MetricCard
+                  title="Чистые"
+                  value={fmtMln(aggregates.cleanOpRisk.total)}
+                  utilization={aggregates.cleanOpRisk.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.cleanOpRisk.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.cleanOpRisk.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Кредитные"
+                  value={fmtMln(aggregates.creditOpRisk.total)}
+                  utilization={aggregates.creditOpRisk.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.creditOpRisk.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.creditOpRisk.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Косвенные"
+                  value={fmtMln(aggregates.indirectLosses.total)}
+                  utilization={aggregates.indirectLosses.utilization}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Лимит', value: `${fmtMln(aggregates.indirectLosses.limit)}` },
+                    { label: 'Прогноз', value: `${fmtMln(aggregates.indirectLosses.forecast)}` },
+                    { label: 'Лимит после ребаджета', value: '—' },
+                  ]}
+                />
+                <MetricCard
+                  title="Потенциальные"
+                  value={fmtMln(aggregates.potentialLosses.total)}
+                  utilization={0}
+                  showDonut={false}
+                  isExpanded={widgetsExpanded}
+                  onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                  detailRows={[
+                    { label: 'Чистые', value: `${fmtMln(aggregates.potentialLosses.cleanBreakdown)}` },
+                    { label: 'Кредитные', value: `${fmtMln(aggregates.potentialLosses.creditBreakdown)}` },
+                    { label: 'Косвенные', value: `${fmtMln(aggregates.potentialLosses.indirectBreakdown)}` },
+                  ]}
+                />
+              </div>
+            ) : (
+              (() => {
+                const campaignRisks = risks.filter(r => !!r.campaignStatus);
+                const sumProposed = campaignRisks.reduce((s, r) => s + (r.proposedLimits?.cleanOpRisk ?? r.cleanOpRisk.limit ?? 0) + (r.proposedLimits?.creditOpRisk ?? r.creditOpRisk.limit ?? 0) + (r.proposedLimits?.indirectLosses ?? r.indirectLosses.limit ?? 0), 0);
+                const changed = campaignRisks.filter(r => {
+                  const p = r.proposedLimits;
+                  if (!p) return false;
+                  return (p.cleanOpRisk ?? r.cleanOpRisk.limit) !== r.cleanOpRisk.limit
+                      || (p.creditOpRisk ?? r.creditOpRisk.limit) !== r.creditOpRisk.limit
+                      || (p.indirectLosses ?? r.indirectLosses.limit) !== r.indirectLosses.limit;
+                }).length;
+                const review = campaignRisks.filter(r => r.campaignStatus === 'На согласовании').length;
+                const returned = campaignRisks.filter(r => r.campaignStatus === 'Возвращён на корректировку').length;
+                const Card = ({ title, value, accent = false }: { title: string; value: string | number; accent?: boolean }) => (
+                  <div className={cn("p-4 rounded-xl border bg-card", accent ? "border-violet-200 bg-violet-50/40" : "border-border")}>
+                    <p className="text-xs text-muted-foreground mb-1">{title}</p>
+                    <p className={cn("text-xl font-semibold", accent && "text-violet-900")}>{value}</p>
+                  </div>
+                );
+                return (
+                  <div className="grid grid-cols-4 gap-4">
+                    <Card title="Сумма лимитов 2026" value={fmtMln(Math.round(sumProposed * 10) / 10)} accent />
+                    <Card title="Изменено лимитов" value={changed} />
+                    <Card title="На согласовании" value={review} />
+                    <Card title="Требуют корректировки" value={returned} />
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Mode-specific filter chips */}
+            {appMode === 'monitoring' ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {([
+                  { v: 'all', l: 'Все риски' },
+                  { v: 'actions', l: 'Требуют действий' },
+                  { v: 'rp', l: 'Согласование РП' },
+                  { v: 'correction', l: 'Корректировка' },
+                  { v: 'high', l: 'Высокий уровень' },
+                  { v: 'mirroring', l: 'Зеркалирование' },
+                ] as const).map(c => (
+                  <button
+                    key={c.v}
+                    onClick={() => setMonitoringChip(c.v)}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                      monitoringChip === c.v
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {c.l}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {([
+                  { v: 'all', l: 'Все' },
+                  { v: 'draft', l: 'Черновики' },
+                  { v: 'review', l: 'На согласовании' },
+                  { v: 'returned', l: 'Возвращены' },
+                  { v: 'approved', l: 'Согласованы' },
+                  { v: 'excluded', l: 'Исключены' },
+                ] as const).map(c => (
+                  <button
+                    key={c.v}
+                    onClick={() => setCampaignChip(c.v)}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                      campaignChip === c.v
+                        ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {c.l}
+                  </button>
+                ))}
+              </div>
+            )}
+
 
             {/* === CONTROL BAR — Line 1 === */}
             <div className="flex items-center gap-2 h-11">
@@ -730,6 +888,7 @@ const Index = () => {
                     key={risk.id}
                     risk={risk}
                     mode={screenMode}
+                    appMode={appMode}
                     draftLimits={screenMode === 'edit' ? draftLimits[risk.id] : undefined}
                     onLimitChange={handleLimitChange}
                     onRiskClick={handleRiskClick}
