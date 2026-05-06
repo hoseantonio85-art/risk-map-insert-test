@@ -396,37 +396,6 @@ export function RiskRow({
             />
           </div>
         )}
-          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-            <LossChip
-              label="Чистые"
-              value={risk.cleanOpRisk.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.cleanOpRisk}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'cleanOpRisk', v) : undefined}
-              utilization={risk.cleanOpRisk.limit ? Math.round((risk.cleanOpRisk.value / risk.cleanOpRisk.limit) * 100) : undefined}
-            />
-            <LossChip
-              label="Кредитные"
-              value={risk.creditOpRisk.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.creditOpRisk}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'creditOpRisk', v) : undefined}
-              utilization={risk.creditOpRisk.limit ? Math.round((risk.creditOpRisk.value / risk.creditOpRisk.limit) * 100) : undefined}
-            />
-            <LossChip
-              label="Косвенные"
-              value={risk.indirectLosses.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.indirectLosses}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'indirectLosses', v) : undefined}
-              utilization={risk.indirectLosses.limit ? Math.round((risk.indirectLosses.value / risk.indirectLosses.limit) * 100) : undefined}
-            />
-            <LossChip
-              label="Потенц."
-              value={risk.potentialLosses}
-            />
-          </div>
-        )}
       </div>
 
       {/* Accordion */}
