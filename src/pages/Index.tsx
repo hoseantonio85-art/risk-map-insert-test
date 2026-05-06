@@ -577,11 +577,13 @@ const Index = () => {
 
         {/* === SCROLLABLE CONTENT === */}
         <div className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
-            {/* Section title */}
-            <h2 className="text-base font-semibold text-foreground">
-              {appMode === 'campaign' ? 'Лимитная кампания 2026' : 'Потери от операционных рисков'}
-            </h2>
+          <div className="p-6 space-y-4">
+            {/* Optional compact context line */}
+            {appMode === 'campaign' && (
+              <div className="text-xs text-muted-foreground -mb-1">
+                Лимитная кампания открыта до <span className="text-foreground font-medium">{campaignDeadline}</span>
+              </div>
+            )}
 
             {/* Metrics */}
             {appMode === 'monitoring' ? (
