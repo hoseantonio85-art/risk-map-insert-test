@@ -503,21 +503,24 @@ const Index = () => {
     <MainLayout>
       <div className="flex flex-col h-full">
         {/* === HEADER === */}
-        <div className="px-6 py-4 border-b border-border bg-card space-y-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold">Карта рисков</h1>
+        <div className="px-6 py-3 border-b border-border bg-card">
+          <div className="grid grid-cols-3 items-center gap-4">
+            {/* Left: title */}
+            <div className="flex items-center gap-3 min-w-0">
+              <h1 className="text-xl font-semibold truncate">Операционные риски</h1>
               {screenMode === 'edit' && (
-                <Badge variant="default" className="gap-1.5">Режим редактирования</Badge>
+                <Badge variant="default" className="gap-1.5 shrink-0">Режим редактирования</Badge>
               )}
+            </div>
 
-              {/* Mode switcher */}
-              <div className="ml-2 inline-flex items-center rounded-lg border border-border bg-muted/40 p-1 h-9">
+            {/* Center: mode switcher */}
+            <div className="flex justify-center">
+              <div className="inline-flex items-center rounded-lg bg-muted p-1 h-9">
                 <button
                   onClick={() => setAppMode('monitoring')}
                   className={cn(
-                    "px-3 py-1 text-sm font-medium rounded-md transition-all",
-                    appMode === 'monitoring' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    "px-3.5 py-1 text-sm font-medium rounded-md transition-all",
+                    appMode === 'monitoring' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Мониторинг
@@ -525,29 +528,31 @@ const Index = () => {
                 <button
                   onClick={() => setAppMode('campaign')}
                   className={cn(
-                    "px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
-                    appMode === 'campaign' ? "bg-violet-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    "px-3.5 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
+                    appMode === 'campaign' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Лимитная кампания
                   {campaignOpen && (
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold", appMode === 'campaign' ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700")}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">
                       открыта
                     </span>
                   )}
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Right: actions */}
+            <div className="flex items-center gap-2 justify-end">
               {screenMode === 'view' && (
                 <>
                   {appMode === 'campaign' && (
-                    <Button variant="outline" onClick={handleStartEdit} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={handleStartEdit} className="gap-2">
                       <Pencil className="w-4 h-4" />
                       Редактировать лимиты
                     </Button>
                   )}
-                  <Button onClick={handleOpenWizardCreate} className="gap-2">
+                  <Button size="sm" onClick={handleOpenWizardCreate} className="gap-2">
                     <Plus className="w-4 h-4" />
                     Создать риск
                   </Button>
@@ -555,39 +560,19 @@ const Index = () => {
               )}
               {screenMode === 'edit' && appMode === 'campaign' && (
                 <>
-                  <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
-                    Отмена
-                  </Button>
-                  <Button variant="outline" onClick={handleSaveLimits} className="gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCancelEdit}>Отмена</Button>
+                  <Button variant="outline" size="sm" onClick={handleSaveLimits} className="gap-2">
                     <Save className="w-4 h-4" />
                     Сохранить
                   </Button>
-                  <Button onClick={handleSendForApproval} className="gap-2">
+                  <Button size="sm" onClick={handleSendForApproval} className="gap-2">
                     <Send className="w-4 h-4" />
-                    Отправить на согласование
+                    Отправить
                   </Button>
                 </>
               )}
             </div>
           </div>
-
-          {/* Context banner */}
-          {appMode === 'monitoring' ? (
-            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-              <div>
-                <span className="text-foreground">Мониторинг активен постоянно.</span> Здесь отображается текущая утилизация лимитов, инциденты и изменения уровня риска.
-                {campaignOpen && (
-                  <div className="mt-0.5 text-[11px] text-muted-foreground/80">Лимитная кампания сейчас открыта, но мониторинг продолжается.</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-md border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900 flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-violet-600 text-white">Открыта</span>
-              <span><span className="font-medium">Лимитная кампания</span> открыта до {campaignDeadline}. Здесь согласуются лимиты на следующий период.</span>
-            </div>
-          )}
         </div>
 
         {/* === SCROLLABLE CONTENT === */}
