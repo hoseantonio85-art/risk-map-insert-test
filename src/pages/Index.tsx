@@ -541,24 +541,30 @@ const Index = () => {
             <div className="flex items-center gap-2">
               {screenMode === 'view' && (
                 <>
-                  <Button variant="outline" onClick={handleStartEdit} className="gap-2">
-                    <Pencil className="w-4 h-4" />
-                    Редактировать лимиты
-                  </Button>
+                  {appMode === 'campaign' && (
+                    <Button variant="outline" onClick={handleStartEdit} className="gap-2">
+                      <Pencil className="w-4 h-4" />
+                      Редактировать лимиты
+                    </Button>
+                  )}
                   <Button onClick={handleOpenWizardCreate} className="gap-2">
                     <Plus className="w-4 h-4" />
                     Создать риск
                   </Button>
                 </>
               )}
-              {screenMode === 'edit' && (
+              {screenMode === 'edit' && appMode === 'campaign' && (
                 <>
                   <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
                     Отмена
                   </Button>
-                  <Button onClick={handleSaveLimits} className="gap-2">
+                  <Button variant="outline" onClick={handleSaveLimits} className="gap-2">
                     <Save className="w-4 h-4" />
                     Сохранить
+                  </Button>
+                  <Button onClick={handleSendForApproval} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    Отправить на согласование
                   </Button>
                 </>
               )}
@@ -648,7 +654,18 @@ const Index = () => {
             ) : (
               (() => {
                 const campaignRisks = risks.filter(r => !!r.campaignStatus);
-                const sumProposed = campaignRisks.reduce((s, r) => s + (r.proposedLimits?.cleanOpRisk ?? r.cleanOpRisk.limit ?? 0) + (r.proposedLimits?.creditOpRisk ?? r.creditOpRisk.limit ?? 0) + (r.proposedLimits?.indirectLosses ?? r.indirectLosses.limit ?? 0), 0);
+                const sumField = (field: 'cleanOpRisk' | 'creditOpRisk' | 'indirectLosses') =>
+                  campaignRisks.reduce((s, r) => s + (r.proposedLimits?.[field] ?? r[field].limit ?? 0), 0);
+                const cleanProp = sumField('cleanOpRisk');
+                const creditProp = sumField('creditOpRisk');
+                const indirectProp = sumField('indirectLosses');
+                const cleanCur = campaignRisks.reduce((s, r) => s + (r.cleanOpRisk.limit ?? 0), 0);
+                const creditCur = campaignRisks.reduce((s, r) => s + (r.creditOpRisk.limit ?? 0), 0);
+                const indirectCur = campaignRisks.reduce((s, r) => s + (r.indirectLosses.limit ?? 0), 0);
+                const potentialTotal = campaignRisks.reduce((s, r) => s + (r.potentialLosses ?? 0), 0);
+                const pct = (a: number, b: number) => b > 0 ? Math.round(((a - b) / b) * 100) : 0;
+                const round = (v: number) => Math.round(v * 10) / 10;
+
                 const changed = campaignRisks.filter(r => {
                   const p = r.proposedLimits;
                   if (!p) return false;
@@ -658,18 +675,66 @@ const Index = () => {
                 }).length;
                 const review = campaignRisks.filter(r => r.campaignStatus === 'На согласовании').length;
                 const returned = campaignRisks.filter(r => r.campaignStatus === 'Возвращён на корректировку').length;
-                const Card = ({ title, value, accent = false }: { title: string; value: string | number; accent?: boolean }) => (
-                  <div className={cn("p-4 rounded-xl border bg-card", accent ? "border-violet-200 bg-violet-50/40" : "border-border")}>
-                    <p className="text-xs text-muted-foreground mb-1">{title}</p>
-                    <p className={cn("text-xl font-semibold", accent && "text-violet-900")}>{value}</p>
-                  </div>
-                );
+                const approved = campaignRisks.filter(r => r.campaignStatus === 'Согласован' || r.campaignStatus === 'Утверждён').length;
+
                 return (
-                  <div className="grid grid-cols-4 gap-4">
-                    <Card title="Сумма лимитов 2026" value={fmtMln(Math.round(sumProposed * 10) / 10)} accent />
-                    <Card title="Изменено лимитов" value={changed} />
-                    <Card title="На согласовании" value={review} />
-                    <Card title="Требуют корректировки" value={returned} />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-4 gap-4">
+                      <MetricCard
+                        title="Чистые лимиты 2026"
+                        value={fmtMln(round(cleanProp))}
+                        utilization={0}
+                        showDonut={false}
+                        isExpanded={widgetsExpanded}
+                        onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                        detailRows={[
+                          { label: '2025', value: fmtMln(round(cleanCur)) },
+                          { label: 'Δ', value: `${pct(cleanProp, cleanCur) >= 0 ? '+' : ''}${pct(cleanProp, cleanCur)}%` },
+                        ]}
+                      />
+                      <MetricCard
+                        title="Кредитные лимиты 2026"
+                        value={fmtMln(round(creditProp))}
+                        utilization={0}
+                        showDonut={false}
+                        isExpanded={widgetsExpanded}
+                        onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                        detailRows={[
+                          { label: '2025', value: fmtMln(round(creditCur)) },
+                          { label: 'Δ', value: `${pct(creditProp, creditCur) >= 0 ? '+' : ''}${pct(creditProp, creditCur)}%` },
+                        ]}
+                      />
+                      <MetricCard
+                        title="Косвенные лимиты 2026"
+                        value={fmtMln(round(indirectProp))}
+                        utilization={0}
+                        showDonut={false}
+                        isExpanded={widgetsExpanded}
+                        onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                        detailRows={[
+                          { label: '2025', value: fmtMln(round(indirectCur)) },
+                          { label: 'Δ', value: `${pct(indirectProp, indirectCur) >= 0 ? '+' : ''}${pct(indirectProp, indirectCur)}%` },
+                        ]}
+                      />
+                      <MetricCard
+                        title="Потенциальные / прогноз"
+                        value={fmtMln(round(potentialTotal))}
+                        utilization={0}
+                        showDonut={false}
+                        isExpanded={widgetsExpanded}
+                        onToggleExpand={() => setWidgetsExpanded(!widgetsExpanded)}
+                        detailRows={[
+                          { label: 'Рисков в кампании', value: String(campaignRisks.length) },
+                        ]}
+                      />
+                    </div>
+                    {/* Secondary status chips */}
+                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Изменено: <span className="text-foreground font-medium">{changed}</span></span>
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">На согласовании: <span className="text-foreground font-medium">{review}</span></span>
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Возвращены: <span className="text-foreground font-medium">{returned}</span></span>
+                      <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Согласованы: <span className="text-foreground font-medium">{approved}</span></span>
+                    </div>
                   </div>
                 );
               })()
@@ -936,7 +1001,7 @@ const Index = () => {
         </div>
 
         {/* === FOOTER: Workflow (View mode only) === */}
-        {screenMode === 'view' && (
+        {screenMode === 'view' && appMode === 'campaign' && (
           <div className="sticky bottom-0 px-6 py-4 border-t border-border bg-card/95 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

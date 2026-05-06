@@ -336,9 +336,11 @@ export function RiskRow({
               { key: 'indirectLosses', label: 'Косвенные', cur: risk.indirectLosses.limit || 0, prop: risk.proposedLimits?.indirectLosses },
               { key: 'potential', label: 'Потенц. (прогноз)', cur: risk.potentialLosses || 0, prop: risk.proposedLimits?.potentialLosses },
             ] as const).map((c) => {
-              const proposed = c.prop ?? c.cur;
+              const draftVal = c.key !== 'potential' ? draftLimits?.[c.key as 'cleanOpRisk' | 'creditOpRisk' | 'indirectLosses'] : undefined;
+              const proposed = isEditMode && draftVal !== undefined ? draftVal : (c.prop ?? c.cur);
               const delta = proposed - c.cur;
               const pct = c.cur > 0 ? Math.round((delta / c.cur) * 100) : 0;
+              const editable = isEditMode && c.key !== 'potential';
               return (
                 <div key={c.key} className="bg-violet-50/40 border border-violet-200/60 rounded-lg p-2 flex flex-col gap-0.5">
                   <span className="text-[10px] text-muted-foreground leading-tight">{c.label}</span>
@@ -347,7 +349,20 @@ export function RiskRow({
                   </div>
                   <div className="flex items-baseline gap-1.5 text-[11px]">
                     <span className="text-violet-700">2026:</span>
-                    <span className="font-semibold text-violet-900">{formatCurrency(proposed)} млн</span>
+                    {editable ? (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={proposed || ''}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value.replace(',', '.')) || 0;
+                          onLimitChange?.(risk.id, c.key as 'cleanOpRisk' | 'creditOpRisk' | 'indirectLosses', v);
+                        }}
+                        className="w-16 h-5 px-1 text-[11px] font-semibold text-violet-900 bg-transparent border-b border-violet-300 focus:outline-none focus:border-violet-600"
+                      />
+                    ) : (
+                      <span className="font-semibold text-violet-900">{formatCurrency(proposed)} млн</span>
+                    )}
                     {delta !== 0 && (
                       <span className={cn("text-[10px] font-medium", delta > 0 ? "text-destructive" : "text-primary")}>
                         {delta > 0 ? '+' : ''}{pct}%
@@ -363,25 +378,16 @@ export function RiskRow({
             <LossChip
               label="Чистые"
               value={risk.cleanOpRisk.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.cleanOpRisk}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'cleanOpRisk', v) : undefined}
               utilization={risk.cleanOpRisk.limit ? Math.round((risk.cleanOpRisk.value / risk.cleanOpRisk.limit) * 100) : undefined}
             />
             <LossChip
               label="Кредитные"
               value={risk.creditOpRisk.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.creditOpRisk}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'creditOpRisk', v) : undefined}
               utilization={risk.creditOpRisk.limit ? Math.round((risk.creditOpRisk.value / risk.creditOpRisk.limit) * 100) : undefined}
             />
             <LossChip
               label="Косвенные"
               value={risk.indirectLosses.value}
-              editMode={isEditMode}
-              editValue={draftLimits?.indirectLosses}
-              onEditChange={isEditMode ? (v) => onLimitChange?.(risk.id, 'indirectLosses', v) : undefined}
               utilization={risk.indirectLosses.limit ? Math.round((risk.indirectLosses.value / risk.indirectLosses.limit) * 100) : undefined}
             />
             <LossChip
