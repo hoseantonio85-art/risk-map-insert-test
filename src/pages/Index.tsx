@@ -727,87 +727,84 @@ const Index = () => {
               })()
             )}
 
-            {/* Mode-specific filter chips */}
-            {appMode === 'monitoring' ? (
+            {/* === FILTER ROW === */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Risks / Processes toggle (left) */}
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
+                className="bg-muted p-1 rounded-lg h-9"
+              >
+                <ToggleGroupItem
+                  value="list"
+                  className="gap-1.5 px-3 h-7 text-sm rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  Риски
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="processes"
+                  className="gap-1.5 px-3 h-7 text-sm rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                >
+                  <FolderKanban className="w-3.5 h-3.5" />
+                  Процессы
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              {/* Workflow chips */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                {([
-                  { v: 'all', l: 'Все риски' },
-                  { v: 'actions', l: 'Требуют действий' },
-                  { v: 'rp', l: 'Согласование РП' },
-                  { v: 'correction', l: 'Корректировка' },
-                  { v: 'high', l: 'Высокий уровень' },
-                  { v: 'mirroring', l: 'Зеркалирование' },
-                ] as const).map(c => (
-                  <button
-                    key={c.v}
-                    onClick={() => setMonitoringChip(c.v)}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                      monitoringChip === c.v
-                        ? "border-primary bg-primary/10 text-primary font-medium"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {c.l}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {([
-                  { v: 'all', l: 'Все' },
-                  { v: 'draft', l: 'Черновики' },
-                  { v: 'review', l: 'На согласовании' },
-                  { v: 'returned', l: 'Возвращены' },
-                  { v: 'approved', l: 'Согласованы' },
-                  { v: 'excluded', l: 'Исключены' },
-                ] as const).map(c => (
-                  <button
-                    key={c.v}
-                    onClick={() => setCampaignChip(c.v)}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                      campaignChip === c.v
-                        ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {c.l}
-                  </button>
-                ))}
-              </div>
-            )}
-
-
-            {/* === CONTROL BAR — Line 1 === */}
-            <div className="flex items-center gap-2 h-11">
-              {/* Segmented control */}
-              <div className="inline-flex items-center rounded-lg border border-border bg-muted/50 p-1 h-9">
-                {([
-                  { value: 'registry', label: 'Реестр' },
-                  { value: 'actions', label: 'Требуют действий' },
-                  { value: 'mirroring', label: 'Зеркалирование' },
-                ] as const).map((seg, i, arr) => (
-                  <button
-                    key={seg.value}
-                    onClick={() => {
-                      setRegistryMode(seg.value);
-                      if (seg.value !== 'actions') setActiveActionChip(null);
-                    }}
-                    className={cn(
-                      "relative px-3.5 py-1 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap",
-                      registryMode === seg.value
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {seg.label}
-                  </button>
-                ))}
+                {appMode === 'monitoring' ? (
+                  ([
+                    { v: 'all', l: 'Все' },
+                    { v: 'actions', l: 'Оценить' },
+                    { v: 'rp', l: 'Согласовать' },
+                    { v: 'correction', l: 'Корректировать' },
+                    { v: 'high', l: 'Выбрать стратегию' },
+                    { v: 'mirroring', l: 'Зеркалирование' },
+                  ] as const).map(c => (
+                    <button
+                      key={c.v}
+                      onClick={() => setMonitoringChip(c.v)}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        monitoringChip === c.v
+                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {c.l}
+                    </button>
+                  ))
+                ) : (
+                  ([
+                    { v: 'all', l: 'Все' },
+                    { v: 'draft', l: 'Черновики' },
+                    { v: 'review', l: 'На согласовании' },
+                    { v: 'returned', l: 'Возвращены' },
+                    { v: 'approved', l: 'Согласованы' },
+                    { v: 'excluded', l: 'Исключены' },
+                  ] as const).map(c => (
+                    <button
+                      key={c.v}
+                      onClick={() => setCampaignChip(c.v)}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        campaignChip === c.v
+                          ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {c.l}
+                    </button>
+                  ))
+                )}
               </div>
 
-              {/* Search — expandable */}
-              <div className="flex items-center">
+              <div className="flex-1" />
+
+              {/* Right: search, sort, filter */}
+              <div className="flex items-center gap-1">
                 {searchOpen ? (
                   <div className="flex items-center gap-1">
                     <Search className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -831,53 +828,15 @@ const Index = () => {
                     <Search className="w-4 h-4" />
                   </Button>
                 )}
+                <Button variant="ghost" size="sm" className="h-8 text-sm">
+                  Новые
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 relative" onClick={() => setFilterDrawerOpen(true)}>
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {hasAdvancedFilters && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+                </Button>
               </div>
-
-              {/* Filter drawer trigger */}
-              <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setFilterDrawerOpen(true)}>
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                Фильтр
-                {hasAdvancedFilters && <span className="w-2 h-2 rounded-full bg-primary" />}
-              </Button>
-
-              <div className="flex-1" />
-
-              {/* View switcher */}
-              <ToggleGroup
-                type="single"
-                value={viewMode}
-                onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
-              >
-                <ToggleGroupItem value="list" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  <LayoutList className="w-3.5 h-3.5" />
-                  Риски
-                </ToggleGroupItem>
-                <ToggleGroupItem value="processes" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  <FolderKanban className="w-3.5 h-3.5" />
-                  Процессы
-                </ToggleGroupItem>
-              </ToggleGroup>
             </div>
-
-            {/* === CONTROL BAR — Line 2 (only in "Требуют действий") === */}
-            {registryMode === 'actions' && (
-              <div className="flex items-center gap-2 h-9">
-                {(['evaluate', 'approve', 'correct'] as ActionChip[]).map((chip) => {
-                  const labels: Record<ActionChip, string> = { evaluate: 'Оценить', approve: 'Согласовать', correct: 'Скорректировать' };
-                  return (
-                    <Button
-                      key={chip}
-                      variant={activeActionChip === chip ? 'default' : 'outline'}
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setActiveActionChip(activeActionChip === chip ? null : chip)}
-                    >
-                      {labels[chip]}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
 
             {/* Active filter chips */}
             {(selectedProcessFilter || filterProbability || filterImpact || filterUtilZone) && (
