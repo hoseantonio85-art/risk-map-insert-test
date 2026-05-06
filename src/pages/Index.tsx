@@ -541,24 +541,30 @@ const Index = () => {
             <div className="flex items-center gap-2">
               {screenMode === 'view' && (
                 <>
-                  <Button variant="outline" onClick={handleStartEdit} className="gap-2">
-                    <Pencil className="w-4 h-4" />
-                    Редактировать лимиты
-                  </Button>
+                  {appMode === 'campaign' && (
+                    <Button variant="outline" onClick={handleStartEdit} className="gap-2">
+                      <Pencil className="w-4 h-4" />
+                      Редактировать лимиты
+                    </Button>
+                  )}
                   <Button onClick={handleOpenWizardCreate} className="gap-2">
                     <Plus className="w-4 h-4" />
                     Создать риск
                   </Button>
                 </>
               )}
-              {screenMode === 'edit' && (
+              {screenMode === 'edit' && appMode === 'campaign' && (
                 <>
                   <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
                     Отмена
                   </Button>
-                  <Button onClick={handleSaveLimits} className="gap-2">
+                  <Button variant="outline" onClick={handleSaveLimits} className="gap-2">
                     <Save className="w-4 h-4" />
                     Сохранить
+                  </Button>
+                  <Button onClick={handleSendForApproval} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    Отправить на согласование
                   </Button>
                 </>
               )}
