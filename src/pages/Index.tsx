@@ -503,21 +503,24 @@ const Index = () => {
     <MainLayout>
       <div className="flex flex-col h-full">
         {/* === HEADER === */}
-        <div className="px-6 py-4 border-b border-border bg-card space-y-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold">Карта рисков</h1>
+        <div className="px-6 py-3 border-b border-border bg-card">
+          <div className="grid grid-cols-3 items-center gap-4">
+            {/* Left: title */}
+            <div className="flex items-center gap-3 min-w-0">
+              <h1 className="text-xl font-semibold truncate">Операционные риски</h1>
               {screenMode === 'edit' && (
-                <Badge variant="default" className="gap-1.5">Режим редактирования</Badge>
+                <Badge variant="default" className="gap-1.5 shrink-0">Режим редактирования</Badge>
               )}
+            </div>
 
-              {/* Mode switcher */}
-              <div className="ml-2 inline-flex items-center rounded-lg border border-border bg-muted/40 p-1 h-9">
+            {/* Center: mode switcher */}
+            <div className="flex justify-center">
+              <div className="inline-flex items-center rounded-lg bg-muted p-1 h-9">
                 <button
                   onClick={() => setAppMode('monitoring')}
                   className={cn(
-                    "px-3 py-1 text-sm font-medium rounded-md transition-all",
-                    appMode === 'monitoring' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    "px-3.5 py-1 text-sm font-medium rounded-md transition-all",
+                    appMode === 'monitoring' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Мониторинг
@@ -525,29 +528,31 @@ const Index = () => {
                 <button
                   onClick={() => setAppMode('campaign')}
                   className={cn(
-                    "px-3 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
-                    appMode === 'campaign' ? "bg-violet-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    "px-3.5 py-1 text-sm font-medium rounded-md transition-all flex items-center gap-1.5",
+                    appMode === 'campaign' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Лимитная кампания
                   {campaignOpen && (
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold", appMode === 'campaign' ? "bg-white/20 text-white" : "bg-violet-100 text-violet-700")}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-violet-100 text-violet-700">
                       открыта
                     </span>
                   )}
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Right: actions */}
+            <div className="flex items-center gap-2 justify-end">
               {screenMode === 'view' && (
                 <>
                   {appMode === 'campaign' && (
-                    <Button variant="outline" onClick={handleStartEdit} className="gap-2">
+                    <Button variant="outline" size="sm" onClick={handleStartEdit} className="gap-2">
                       <Pencil className="w-4 h-4" />
                       Редактировать лимиты
                     </Button>
                   )}
-                  <Button onClick={handleOpenWizardCreate} className="gap-2">
+                  <Button size="sm" onClick={handleOpenWizardCreate} className="gap-2">
                     <Plus className="w-4 h-4" />
                     Создать риск
                   </Button>
@@ -555,48 +560,30 @@ const Index = () => {
               )}
               {screenMode === 'edit' && appMode === 'campaign' && (
                 <>
-                  <Button variant="outline" onClick={handleCancelEdit} className="gap-2">
-                    Отмена
-                  </Button>
-                  <Button variant="outline" onClick={handleSaveLimits} className="gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCancelEdit}>Отмена</Button>
+                  <Button variant="outline" size="sm" onClick={handleSaveLimits} className="gap-2">
                     <Save className="w-4 h-4" />
                     Сохранить
                   </Button>
-                  <Button onClick={handleSendForApproval} className="gap-2">
+                  <Button size="sm" onClick={handleSendForApproval} className="gap-2">
                     <Send className="w-4 h-4" />
-                    Отправить на согласование
+                    Отправить
                   </Button>
                 </>
               )}
             </div>
           </div>
-
-          {/* Context banner */}
-          {appMode === 'monitoring' ? (
-            <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-              <div>
-                <span className="text-foreground">Мониторинг активен постоянно.</span> Здесь отображается текущая утилизация лимитов, инциденты и изменения уровня риска.
-                {campaignOpen && (
-                  <div className="mt-0.5 text-[11px] text-muted-foreground/80">Лимитная кампания сейчас открыта, но мониторинг продолжается.</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-md border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900 flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-violet-600 text-white">Открыта</span>
-              <span><span className="font-medium">Лимитная кампания</span> открыта до {campaignDeadline}. Здесь согласуются лимиты на следующий период.</span>
-            </div>
-          )}
         </div>
 
         {/* === SCROLLABLE CONTENT === */}
         <div className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
-            {/* Section title */}
-            <h2 className="text-base font-semibold text-foreground">
-              {appMode === 'campaign' ? 'Лимитная кампания 2026' : 'Потери от операционных рисков'}
-            </h2>
+          <div className="p-6 space-y-4">
+            {/* Optional compact context line */}
+            {appMode === 'campaign' && (
+              <div className="text-xs text-muted-foreground -mb-1">
+                Лимитная кампания открыта до <span className="text-foreground font-medium">{campaignDeadline}</span>
+              </div>
+            )}
 
             {/* Metrics */}
             {appMode === 'monitoring' ? (
@@ -740,87 +727,84 @@ const Index = () => {
               })()
             )}
 
-            {/* Mode-specific filter chips */}
-            {appMode === 'monitoring' ? (
+            {/* === FILTER ROW === */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Risks / Processes toggle (left) */}
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
+                className="bg-muted p-1 rounded-lg h-9"
+              >
+                <ToggleGroupItem
+                  value="list"
+                  className="gap-1.5 px-3 h-7 text-sm rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  Риски
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="processes"
+                  className="gap-1.5 px-3 h-7 text-sm rounded-md data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                >
+                  <FolderKanban className="w-3.5 h-3.5" />
+                  Процессы
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              {/* Workflow chips */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                {([
-                  { v: 'all', l: 'Все риски' },
-                  { v: 'actions', l: 'Требуют действий' },
-                  { v: 'rp', l: 'Согласование РП' },
-                  { v: 'correction', l: 'Корректировка' },
-                  { v: 'high', l: 'Высокий уровень' },
-                  { v: 'mirroring', l: 'Зеркалирование' },
-                ] as const).map(c => (
-                  <button
-                    key={c.v}
-                    onClick={() => setMonitoringChip(c.v)}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                      monitoringChip === c.v
-                        ? "border-primary bg-primary/10 text-primary font-medium"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {c.l}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {([
-                  { v: 'all', l: 'Все' },
-                  { v: 'draft', l: 'Черновики' },
-                  { v: 'review', l: 'На согласовании' },
-                  { v: 'returned', l: 'Возвращены' },
-                  { v: 'approved', l: 'Согласованы' },
-                  { v: 'excluded', l: 'Исключены' },
-                ] as const).map(c => (
-                  <button
-                    key={c.v}
-                    onClick={() => setCampaignChip(c.v)}
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                      campaignChip === c.v
-                        ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {c.l}
-                  </button>
-                ))}
-              </div>
-            )}
-
-
-            {/* === CONTROL BAR — Line 1 === */}
-            <div className="flex items-center gap-2 h-11">
-              {/* Segmented control */}
-              <div className="inline-flex items-center rounded-lg border border-border bg-muted/50 p-1 h-9">
-                {([
-                  { value: 'registry', label: 'Реестр' },
-                  { value: 'actions', label: 'Требуют действий' },
-                  { value: 'mirroring', label: 'Зеркалирование' },
-                ] as const).map((seg, i, arr) => (
-                  <button
-                    key={seg.value}
-                    onClick={() => {
-                      setRegistryMode(seg.value);
-                      if (seg.value !== 'actions') setActiveActionChip(null);
-                    }}
-                    className={cn(
-                      "relative px-3.5 py-1 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap",
-                      registryMode === seg.value
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {seg.label}
-                  </button>
-                ))}
+                {appMode === 'monitoring' ? (
+                  ([
+                    { v: 'all', l: 'Все' },
+                    { v: 'actions', l: 'Оценить' },
+                    { v: 'rp', l: 'Согласовать' },
+                    { v: 'correction', l: 'Корректировать' },
+                    { v: 'high', l: 'Выбрать стратегию' },
+                    { v: 'mirroring', l: 'Зеркалирование' },
+                  ] as const).map(c => (
+                    <button
+                      key={c.v}
+                      onClick={() => setMonitoringChip(c.v)}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        monitoringChip === c.v
+                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {c.l}
+                    </button>
+                  ))
+                ) : (
+                  ([
+                    { v: 'all', l: 'Все' },
+                    { v: 'draft', l: 'Черновики' },
+                    { v: 'review', l: 'На согласовании' },
+                    { v: 'returned', l: 'Возвращены' },
+                    { v: 'approved', l: 'Согласованы' },
+                    { v: 'excluded', l: 'Исключены' },
+                  ] as const).map(c => (
+                    <button
+                      key={c.v}
+                      onClick={() => setCampaignChip(c.v)}
+                      className={cn(
+                        "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                        campaignChip === c.v
+                          ? "border-violet-500 bg-violet-100 text-violet-800 font-medium"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {c.l}
+                    </button>
+                  ))
+                )}
               </div>
 
-              {/* Search — expandable */}
-              <div className="flex items-center">
+              <div className="flex-1" />
+
+              {/* Right: search, sort, filter */}
+              <div className="flex items-center gap-1">
                 {searchOpen ? (
                   <div className="flex items-center gap-1">
                     <Search className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -844,53 +828,15 @@ const Index = () => {
                     <Search className="w-4 h-4" />
                   </Button>
                 )}
+                <Button variant="ghost" size="sm" className="h-8 text-sm">
+                  Новые
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 relative" onClick={() => setFilterDrawerOpen(true)}>
+                  <SlidersHorizontal className="w-4 h-4" />
+                  {hasAdvancedFilters && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />}
+                </Button>
               </div>
-
-              {/* Filter drawer trigger */}
-              <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setFilterDrawerOpen(true)}>
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                Фильтр
-                {hasAdvancedFilters && <span className="w-2 h-2 rounded-full bg-primary" />}
-              </Button>
-
-              <div className="flex-1" />
-
-              {/* View switcher */}
-              <ToggleGroup
-                type="single"
-                value={viewMode}
-                onValueChange={(val) => { if (val) setViewMode(val as ViewMode); }}
-              >
-                <ToggleGroupItem value="list" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  <LayoutList className="w-3.5 h-3.5" />
-                  Риски
-                </ToggleGroupItem>
-                <ToggleGroupItem value="processes" className="gap-1.5 px-3 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
-                  <FolderKanban className="w-3.5 h-3.5" />
-                  Процессы
-                </ToggleGroupItem>
-              </ToggleGroup>
             </div>
-
-            {/* === CONTROL BAR — Line 2 (only in "Требуют действий") === */}
-            {registryMode === 'actions' && (
-              <div className="flex items-center gap-2 h-9">
-                {(['evaluate', 'approve', 'correct'] as ActionChip[]).map((chip) => {
-                  const labels: Record<ActionChip, string> = { evaluate: 'Оценить', approve: 'Согласовать', correct: 'Скорректировать' };
-                  return (
-                    <Button
-                      key={chip}
-                      variant={activeActionChip === chip ? 'default' : 'outline'}
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setActiveActionChip(activeActionChip === chip ? null : chip)}
-                    >
-                      {labels[chip]}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
 
             {/* Active filter chips */}
             {(selectedProcessFilter || filterProbability || filterImpact || filterUtilZone) && (
