@@ -451,13 +451,19 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                       <span className="text-right max-w-[160px] text-xs">{risk.subdivision}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Автор</span>
-                      <span className="text-right text-xs">{risk.author}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-muted-foreground">Создан</span>
                       <span>{risk.createdAt}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Автор</span>
+                      <span className="text-right text-xs">{risk.author}</span>
+                    </div>
+                    {risk.riskOwner && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Владелец</span>
+                        <span className="text-right text-xs">{risk.riskOwner}</span>
+                      </div>
+                    )}
                   </div>
                   {risk.responseStrategy && (
                     <div className="pt-2 border-t border-border">
