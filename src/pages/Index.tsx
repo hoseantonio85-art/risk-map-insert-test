@@ -1001,7 +1001,7 @@ const Index = () => {
         </div>
 
         {/* === FOOTER: Workflow (View mode only) === */}
-        {screenMode === 'view' && (
+        {screenMode === 'view' && appMode === 'campaign' && (
           <div className="sticky bottom-0 px-6 py-4 border-t border-border bg-card/95 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
