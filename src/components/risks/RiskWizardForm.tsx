@@ -966,52 +966,53 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               )}
 
-              {/* === Рамка 1: Лимиты === */}
+              {/* Compact campaign helper note */}
+              {campaignActive && (
+                <p className="text-[12px] text-muted-foreground/80 leading-snug -mt-2">
+                  Проект 2027 не влияет на текущую утилизацию до утверждения кампании.
+                </p>
+              )}
+
+              {/* === Рамка 1: Лимиты на период === */}
               <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Лимиты</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Чистые</Label>
-                    <FormattedInput
-                      value={cleanOpLimit}
-                      onChange={v => handleLimitChange(setCleanOpLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.cleanOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-                    <FormattedInput
-                      value={creditOpLimit}
-                      onChange={v => handleLimitChange(setCreditOpLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.creditOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-                    <FormattedInput
-                      value={indirectLimit}
-                      onChange={v => handleLimitChange(setIndirectLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.indirect && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-base font-semibold">Лимиты на период</h3>
+                  {campaignActive && (
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                      Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  {([
+                    { label: 'Чистые', base: baseLimits.cleanOp, value: cleanOpLimit, set: setCleanOpLimit, warn: limitWarnings.cleanOp },
+                    { label: 'В кредитовании', base: baseLimits.creditOp, value: creditOpLimit, set: setCreditOpLimit, warn: limitWarnings.creditOp },
+                    { label: 'Косвенные', base: baseLimits.indirect, value: indirectLimit, set: setIndirectLimit, warn: limitWarnings.indirect },
+                  ] as const).map(row => (
+                    <div key={row.label} className="space-y-1.5">
+                      <Label className="text-xs font-medium">{row.label}</Label>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Действует сейчас</span>
+                        <span className="font-medium text-foreground/80">{fmtBase(row.base)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] text-primary/80 shrink-0">Проект 2027</span>
+                        <div className="flex-1 max-w-[160px]">
+                          <FormattedInput
+                            value={row.value}
+                            onChange={v => handleLimitChange(row.set, v)}
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      {row.warn && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Превышение лимита
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1024,20 +1025,27 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </p>
                 </div>
 
-                {/* Read-only totals */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Чистые</p>
-                    <p className="text-base font-medium">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
-                    <p className="text-base font-medium">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
-                    <p className="text-base font-medium">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
+                {/* Summary cards — base vs 2027 estimate */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {([
+                    { label: 'Чистые', base: basePotential.cleanOp, est: totals.cleanOp },
+                    { label: 'В кредитовании', base: basePotential.creditOp, est: totals.creditOp },
+                    { label: 'Косвенные', base: basePotential.indirect, est: totals.indirect },
+                  ] as const).map(c => (
+                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
+                      <p className="text-xs text-muted-foreground">{c.label}</p>
+                      <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+                        <span>База</span>
+                        <span className="font-medium text-foreground/80">{fmtBase(c.base)}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] text-primary/80">2027</span>
+                        <p className="text-base font-medium">
+                          {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Scenarios inside this frame */}
@@ -1053,6 +1061,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                       <CollapsibleScenario
                         key={scenario.id}
                         scenario={scenario}
+                        base={baseScenarioMap[scenario.id]}
                         index={index}
                         scenarioTotal={scenarioTotal}
                         percentage={scenarioPercentages[index]}
@@ -1069,6 +1078,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </Button>
                 </div>
               </div>
+
 
               {/* === Параметры риска === */}
               <div className="p-5 rounded-xl border border-border bg-card space-y-3">
