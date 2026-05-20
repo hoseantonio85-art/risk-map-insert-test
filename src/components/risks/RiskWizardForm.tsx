@@ -282,6 +282,7 @@ function ExtraParamsBlock({
 
 function CollapsibleScenario({
   scenario,
+  base,
   index,
   scenarioTotal,
   percentage,
@@ -290,6 +291,7 @@ function CollapsibleScenario({
   onUpdate,
 }: {
   scenario: ScenarioFormData;
+  base?: { cleanOp: number; creditOp: number; indirect: number };
   index: number;
   scenarioTotal: number;
   percentage: number;
@@ -298,10 +300,10 @@ function CollapsibleScenario({
   onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const baseText = (v?: number) => v != null ? `${formatNum(v)} ₽` : '—';
 
   return (
     <div className="rounded-xl bg-muted/40 border border-border overflow-hidden">
-      {/* Header — always visible */}
       <div className="flex items-center gap-3 px-5 py-3.5">
         <button
           type="button"
@@ -346,10 +348,8 @@ function CollapsibleScenario({
         </Button>
       </div>
 
-      {/* Expanded content */}
       {isOpen && (
         <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
-
           <Textarea
             value={scenario.description}
             onChange={e => onUpdate('description', e.target.value)}
@@ -357,34 +357,43 @@ function CollapsibleScenario({
             className="min-h-[80px]"
           />
 
-          <p className="text-xs font-medium text-muted-foreground mt-1">Потенциальные потери по сценарию</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <p className="text-xs font-medium text-muted-foreground">Потенциальные потери по сценарию</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              База текущего периода · <span className="text-primary/80">Оценка 2027</span>
+            </p>
+          </div>
           <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Чистые</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.cleanOp)}</p>
               <FormattedInput
                 value={scenario.cleanOp}
                 onChange={v => onUpdate('cleanOp', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.creditOp)}</p>
               <FormattedInput
                 value={scenario.creditOp}
                 onChange={v => onUpdate('creditOp', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.indirect)}</p>
               <FormattedInput
                 value={scenario.indirect}
                 onChange={v => onUpdate('indirect', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+              <p className="text-[11px] text-muted-foreground/80">&nbsp;</p>
               <FormattedInput
                 value={scenario.probability}
                 onChange={v => onUpdate('probability', v)}
@@ -396,7 +405,6 @@ function CollapsibleScenario({
             </div>
           </div>
 
-          {/* Optional extra params */}
           <ExtraParamsBlock
             causeType={scenario.causeType}
             itService={scenario.itService}
@@ -450,6 +458,45 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   
   // Per-mirror editable limits (keyed by mirror id)
   const [mirrorEditLimits, setMirrorEditLimits] = useState<Record<string, { cleanOp: number; creditOp: number; indirect: number }>>({});
+
+  // Campaign is assumed active in this prototype
+  const campaignActive = true;
+
+  // Base ("Действует сейчас") snapshots from editRisk — undefined for new risks
+  const baseLimits = {
+    cleanOp: editRisk?.cleanOpRisk?.limit,
+    creditOp: editRisk?.creditOpRisk?.limit,
+    indirect: editRisk?.indirectLosses?.limit,
+  };
+  const basePotential = {
+    cleanOp: editRisk?.cleanOpRisk?.value,
+    creditOp: editRisk?.creditOpRisk?.value,
+    indirect: editRisk?.indirectLosses?.value,
+  };
+  const baseScenarioMap = useMemo(() => {
+    const map: Record<string, { cleanOp: number; creditOp: number; indirect: number }> = {};
+    buildScenariosFromRisk(editRisk).forEach(s => {
+      map[s.id] = { cleanOp: s.cleanOp, creditOp: s.creditOp, indirect: s.indirect };
+    });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRisk?.id]);
+  const baseMirrorMap = useMemo(() => {
+    const map: Record<string, { cleanOp: number; creditOp: number; indirect: number }> = {};
+    const cl = editRisk?.cleanOpRisk?.limit || 0;
+    const cr = editRisk?.creditOpRisk?.limit || 0;
+    const ind = editRisk?.indirectLosses?.limit || 0;
+    (editRisk?.mirrors || []).forEach(m => {
+      map[m.id] = {
+        cleanOp: Math.round(cl * m.percentage / 100 * 10) / 10,
+        creditOp: Math.round(cr * m.percentage / 100 * 10) / 10,
+        indirect: Math.round(ind * m.percentage / 100 * 10) / 10,
+      };
+    });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRisk?.id]);
+  const fmtBase = (v?: number) => v != null ? `${formatNum(v)} ₽` : '—';
 
   // Limits memo state — observe the limits block
   const limitsRef = useRef<HTMLDivElement>(null);
@@ -698,41 +745,25 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     <>
       {showLimitsMemo && (
         <div className="sticky bottom-0 z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
-          <div className="flex items-start gap-6 px-4 py-3 rounded-lg border border-border bg-card shadow-sm">
-            {/* Лимиты */}
+          <div className="flex items-stretch gap-4 px-4 py-2.5 rounded-lg border border-border bg-card shadow-sm">
+            {/* Действует сейчас */}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Лимиты</p>
-              <div className="flex items-center gap-5">
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Чистые </span>
-                  <span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span>
-                </span>
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Кредитные </span>
-                  <span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span>
-                </span>
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Косвенные </span>
-                  <span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span>
-                </span>
+              <p className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground mb-1">Действует сейчас</p>
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="text-xs"><span className="text-muted-foreground">Чистые </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.cleanOp)}</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">В кредитовании </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.creditOp)}</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">Косвенные </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.indirect)}</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">Потенциальные </span><span className="font-semibold text-foreground/80">{editRisk?.potentialLosses != null ? `${formatNum(editRisk.potentialLosses)} ₽` : '—'}</span></span>
               </div>
             </div>
-            {/* Потенциальные потери */}
-            <div className="flex-1 min-w-0 border-l border-border pl-6">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Потенциальные</p>
-              <div className="flex items-center gap-5">
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Чистые </span>
-                  <span className="font-semibold text-foreground">{formatNum(totals.cleanOp)} ₽</span>
-                </span>
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Кредитные </span>
-                  <span className="font-semibold text-foreground">{formatNum(totals.creditOp)} ₽</span>
-                </span>
-                <span className="text-xs">
-                  <span className="text-muted-foreground">Косвенные </span>
-                  <span className="font-semibold text-foreground">{formatNum(totals.indirect)} ₽</span>
-                </span>
+            {/* Проект 2027 */}
+            <div className="flex-1 min-w-0 border-l border-border pl-4">
+              <p className="text-[10px] uppercase tracking-wide font-medium text-primary/80 mb-1">Проект 2027</p>
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="text-xs"><span className="text-muted-foreground">Чистые </span><span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">В кредитовании </span><span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">Косвенные </span><span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span></span>
+                <span className="text-xs"><span className="text-muted-foreground">Потенциальные </span><span className="font-semibold text-foreground">{formatNum(totals.total)} ₽</span></span>
               </div>
             </div>
             <button
@@ -919,52 +950,53 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               )}
 
-              {/* === Рамка 1: Лимиты === */}
+              {/* Compact campaign helper note */}
+              {campaignActive && (
+                <p className="text-[12px] text-muted-foreground/80 leading-snug -mt-2">
+                  Проект 2027 не влияет на текущую утилизацию до утверждения кампании.
+                </p>
+              )}
+
+              {/* === Рамка 1: Лимиты на период === */}
               <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
-                <h3 className="text-base font-semibold">Лимиты</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Чистые</Label>
-                    <FormattedInput
-                      value={cleanOpLimit}
-                      onChange={v => handleLimitChange(setCleanOpLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.cleanOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-                    <FormattedInput
-                      value={creditOpLimit}
-                      onChange={v => handleLimitChange(setCreditOpLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.creditOp && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-                    <FormattedInput
-                      value={indirectLimit}
-                      onChange={v => handleLimitChange(setIndirectLimit, v)}
-                      placeholder="0"
-                    />
-                    {limitWarnings.indirect && (
-                      <p className="text-xs text-destructive flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Превышение лимита
-                      </p>
-                    )}
-                  </div>
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-base font-semibold">Лимиты на период</h3>
+                  {campaignActive && (
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                      Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  {([
+                    { label: 'Чистые', base: baseLimits.cleanOp, value: cleanOpLimit, set: setCleanOpLimit, warn: limitWarnings.cleanOp },
+                    { label: 'В кредитовании', base: baseLimits.creditOp, value: creditOpLimit, set: setCreditOpLimit, warn: limitWarnings.creditOp },
+                    { label: 'Косвенные', base: baseLimits.indirect, value: indirectLimit, set: setIndirectLimit, warn: limitWarnings.indirect },
+                  ] as const).map(row => (
+                    <div key={row.label} className="space-y-1.5">
+                      <Label className="text-xs font-medium">{row.label}</Label>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Действует сейчас</span>
+                        <span className="font-medium text-foreground/80">{fmtBase(row.base)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] text-primary/80 shrink-0">Проект 2027</span>
+                        <div className="flex-1 max-w-[160px]">
+                          <FormattedInput
+                            value={row.value}
+                            onChange={v => handleLimitChange(row.set, v)}
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      {row.warn && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Превышение лимита
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -977,20 +1009,27 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </p>
                 </div>
 
-                {/* Read-only totals */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Чистые</p>
-                    <p className="text-base font-medium">{formatNum(totals.cleanOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Кредитные потери</p>
-                    <p className="text-base font-medium">{formatNum(totals.creditOp)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Косвенные потери</p>
-                    <p className="text-base font-medium">{formatNum(totals.indirect)} <span className="text-sm font-normal text-muted-foreground">₽</span></p>
-                  </div>
+                {/* Summary cards — base vs 2027 estimate */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {([
+                    { label: 'Чистые', base: basePotential.cleanOp, est: totals.cleanOp },
+                    { label: 'В кредитовании', base: basePotential.creditOp, est: totals.creditOp },
+                    { label: 'Косвенные', base: basePotential.indirect, est: totals.indirect },
+                  ] as const).map(c => (
+                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
+                      <p className="text-xs text-muted-foreground">{c.label}</p>
+                      <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+                        <span>База</span>
+                        <span className="font-medium text-foreground/80">{fmtBase(c.base)}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] text-primary/80">2027</span>
+                        <p className="text-base font-medium">
+                          {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Scenarios inside this frame */}
@@ -1006,6 +1045,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                       <CollapsibleScenario
                         key={scenario.id}
                         scenario={scenario}
+                        base={baseScenarioMap[scenario.id]}
                         index={index}
                         scenarioTotal={scenarioTotal}
                         percentage={scenarioPercentages[index]}
@@ -1022,6 +1062,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </Button>
                 </div>
               </div>
+
 
               {/* === Параметры риска === */}
               <div className="p-5 rounded-xl border border-border bg-card space-y-3">
@@ -1089,16 +1130,39 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
           {currentStep === 3 && (
             <div className="px-5 pb-6 pt-2 space-y-4 border-t border-border">
+              {campaignActive && (
+                <div className="flex items-baseline justify-between -mt-1">
+                  <p className="text-sm font-medium text-foreground/90">Зеркалирование лимита 2027</p>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                    Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                  </span>
+                </div>
+              )}
+
               {mirrors.length === 0 && (
                 <p className="text-sm text-muted-foreground">Зеркала не добавлены. Добавьте подразделение для зеркалирования лимитов.</p>
               )}
 
               {mirrors.map((mirror, idx) => {
                 const lv = getMirrorLimitValues(mirror.id, idx);
+                const base = baseMirrorMap[mirror.id];
+                const isNew = !base;
                 return (
                 <div key={mirror.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold">Зеркало {idx + 1}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-semibold">Зеркало {idx + 1}</h4>
+                      {campaignActive && (
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-md font-medium border",
+                          isNew
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-muted text-muted-foreground border-border"
+                        )}>
+                          {isNew ? 'Новое зеркало 2027' : 'Изменение зеркала'}
+                        </span>
+                      )}
+                    </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeMirror(mirror.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1118,31 +1182,46 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </Select>
                   </div>
 
-                  {/* Mirror limits — editable */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Чистые</Label>
-                      <FormattedInput
-                        value={lv.cleanOp}
-                        onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-                      <FormattedInput
-                        value={lv.creditOp}
-                        onChange={v => updateMirrorLimit(mirror.id, 'creditOp', v)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-                      <FormattedInput
-                        value={lv.indirect}
-                        onChange={v => updateMirrorLimit(mirror.id, 'indirect', v)}
-                        placeholder="0"
-                      />
+                  {/* Current active mirror values — readonly */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Действует сейчас</p>
+                    <p className="text-xs text-foreground/80">
+                      Чистые <span className="font-medium">{fmtBase(base?.cleanOp)}</span>
+                      <span className="text-muted-foreground/60"> · </span>
+                      В кредитовании <span className="font-medium">{fmtBase(base?.creditOp)}</span>
+                      <span className="text-muted-foreground/60"> · </span>
+                      Косвенные <span className="font-medium">{fmtBase(base?.indirect)}</span>
+                    </p>
+                  </div>
+
+                  {/* Project 2027 editable */}
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] uppercase tracking-wide text-primary/80">Проект 2027</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Чистые</Label>
+                        <FormattedInput
+                          value={lv.cleanOp}
+                          onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                        <FormattedInput
+                          value={lv.creditOp}
+                          onChange={v => updateMirrorLimit(mirror.id, 'creditOp', v)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                        <FormattedInput
+                          value={lv.indirect}
+                          onChange={v => updateMirrorLimit(mirror.id, 'indirect', v)}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
