@@ -282,6 +282,7 @@ function ExtraParamsBlock({
 
 function CollapsibleScenario({
   scenario,
+  base,
   index,
   scenarioTotal,
   percentage,
@@ -290,6 +291,7 @@ function CollapsibleScenario({
   onUpdate,
 }: {
   scenario: ScenarioFormData;
+  base?: { cleanOp: number; creditOp: number; indirect: number };
   index: number;
   scenarioTotal: number;
   percentage: number;
@@ -298,10 +300,10 @@ function CollapsibleScenario({
   onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const baseText = (v?: number) => v != null ? `${formatNum(v)} ₽` : '—';
 
   return (
     <div className="rounded-xl bg-muted/40 border border-border overflow-hidden">
-      {/* Header — always visible */}
       <div className="flex items-center gap-3 px-5 py-3.5">
         <button
           type="button"
@@ -346,10 +348,8 @@ function CollapsibleScenario({
         </Button>
       </div>
 
-      {/* Expanded content */}
       {isOpen && (
         <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
-
           <Textarea
             value={scenario.description}
             onChange={e => onUpdate('description', e.target.value)}
@@ -357,34 +357,43 @@ function CollapsibleScenario({
             className="min-h-[80px]"
           />
 
-          <p className="text-xs font-medium text-muted-foreground mt-1">Потенциальные потери по сценарию</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <p className="text-xs font-medium text-muted-foreground">Потенциальные потери по сценарию</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              База текущего периода · <span className="text-primary/80">Оценка 2027</span>
+            </p>
+          </div>
           <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Чистые</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.cleanOp)}</p>
               <FormattedInput
                 value={scenario.cleanOp}
                 onChange={v => onUpdate('cleanOp', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.creditOp)}</p>
               <FormattedInput
                 value={scenario.creditOp}
                 onChange={v => onUpdate('creditOp', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
+              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.indirect)}</p>
               <FormattedInput
                 value={scenario.indirect}
                 onChange={v => onUpdate('indirect', v)}
                 placeholder="0"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+              <p className="text-[11px] text-muted-foreground/80">&nbsp;</p>
               <FormattedInput
                 value={scenario.probability}
                 onChange={v => onUpdate('probability', v)}
@@ -396,7 +405,6 @@ function CollapsibleScenario({
             </div>
           </div>
 
-          {/* Optional extra params */}
           <ExtraParamsBlock
             causeType={scenario.causeType}
             itService={scenario.itService}
