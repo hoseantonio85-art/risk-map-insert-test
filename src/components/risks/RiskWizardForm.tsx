@@ -459,6 +459,45 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   // Per-mirror editable limits (keyed by mirror id)
   const [mirrorEditLimits, setMirrorEditLimits] = useState<Record<string, { cleanOp: number; creditOp: number; indirect: number }>>({});
 
+  // Campaign is assumed active in this prototype
+  const campaignActive = true;
+
+  // Base ("Действует сейчас") snapshots from editRisk — undefined for new risks
+  const baseLimits = {
+    cleanOp: editRisk?.cleanOpRisk?.limit,
+    creditOp: editRisk?.creditOpRisk?.limit,
+    indirect: editRisk?.indirectLosses?.limit,
+  };
+  const basePotential = {
+    cleanOp: editRisk?.cleanOpRisk?.value,
+    creditOp: editRisk?.creditOpRisk?.value,
+    indirect: editRisk?.indirectLosses?.value,
+  };
+  const baseScenarioMap = useMemo(() => {
+    const map: Record<string, { cleanOp: number; creditOp: number; indirect: number }> = {};
+    buildScenariosFromRisk(editRisk).forEach(s => {
+      map[s.id] = { cleanOp: s.cleanOp, creditOp: s.creditOp, indirect: s.indirect };
+    });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRisk?.id]);
+  const baseMirrorMap = useMemo(() => {
+    const map: Record<string, { cleanOp: number; creditOp: number; indirect: number }> = {};
+    const cl = editRisk?.cleanOpRisk?.limit || 0;
+    const cr = editRisk?.creditOpRisk?.limit || 0;
+    const ind = editRisk?.indirectLosses?.limit || 0;
+    (editRisk?.mirrors || []).forEach(m => {
+      map[m.id] = {
+        cleanOp: Math.round(cl * m.percentage / 100 * 10) / 10,
+        creditOp: Math.round(cr * m.percentage / 100 * 10) / 10,
+        indirect: Math.round(ind * m.percentage / 100 * 10) / 10,
+      };
+    });
+    return map;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRisk?.id]);
+  const fmtBase = (v?: number) => v != null ? `${formatNum(v)} ₽` : '—';
+
   // Limits memo state — observe the limits block
   const limitsRef = useRef<HTMLDivElement>(null);
   const [limitsOutOfView, setLimitsOutOfView] = useState(false);
