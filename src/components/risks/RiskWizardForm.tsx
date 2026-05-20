@@ -1146,16 +1146,39 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
 
           {currentStep === 3 && (
             <div className="px-5 pb-6 pt-2 space-y-4 border-t border-border">
+              {campaignActive && (
+                <div className="flex items-baseline justify-between -mt-1">
+                  <p className="text-sm font-medium text-foreground/90">Зеркалирование лимита 2027</p>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                    Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                  </span>
+                </div>
+              )}
+
               {mirrors.length === 0 && (
                 <p className="text-sm text-muted-foreground">Зеркала не добавлены. Добавьте подразделение для зеркалирования лимитов.</p>
               )}
 
               {mirrors.map((mirror, idx) => {
                 const lv = getMirrorLimitValues(mirror.id, idx);
+                const base = baseMirrorMap[mirror.id];
+                const isNew = !base;
                 return (
                 <div key={mirror.id} className="p-5 rounded-xl bg-muted/40 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold">Зеркало {idx + 1}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-semibold">Зеркало {idx + 1}</h4>
+                      {campaignActive && (
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-md font-medium border",
+                          isNew
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-muted text-muted-foreground border-border"
+                        )}>
+                          {isNew ? 'Новое зеркало 2027' : 'Изменение зеркала'}
+                        </span>
+                      )}
+                    </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeMirror(mirror.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -1175,31 +1198,46 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </Select>
                   </div>
 
-                  {/* Mirror limits — editable */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Чистые</Label>
-                      <FormattedInput
-                        value={lv.cleanOp}
-                        onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-                      <FormattedInput
-                        value={lv.creditOp}
-                        onChange={v => updateMirrorLimit(mirror.id, 'creditOp', v)}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-                      <FormattedInput
-                        value={lv.indirect}
-                        onChange={v => updateMirrorLimit(mirror.id, 'indirect', v)}
-                        placeholder="0"
-                      />
+                  {/* Current active mirror values — readonly */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Действует сейчас</p>
+                    <p className="text-xs text-foreground/80">
+                      Чистые <span className="font-medium">{fmtBase(base?.cleanOp)}</span>
+                      <span className="text-muted-foreground/60"> · </span>
+                      В кредитовании <span className="font-medium">{fmtBase(base?.creditOp)}</span>
+                      <span className="text-muted-foreground/60"> · </span>
+                      Косвенные <span className="font-medium">{fmtBase(base?.indirect)}</span>
+                    </p>
+                  </div>
+
+                  {/* Project 2027 editable */}
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] uppercase tracking-wide text-primary/80">Проект 2027</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Чистые</Label>
+                        <FormattedInput
+                          value={lv.cleanOp}
+                          onChange={v => updateMirrorLimit(mirror.id, 'cleanOp', v)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                        <FormattedInput
+                          value={lv.creditOp}
+                          onChange={v => updateMirrorLimit(mirror.id, 'creditOp', v)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                        <FormattedInput
+                          value={lv.indirect}
+                          onChange={v => updateMirrorLimit(mirror.id, 'indirect', v)}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
