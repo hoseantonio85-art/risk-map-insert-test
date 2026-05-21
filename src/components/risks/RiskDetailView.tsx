@@ -333,9 +333,38 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             <section id="utilization" className="space-y-3">
               <h2 className="text-base font-semibold">Утилизация лимитов</h2>
               <div className="grid grid-cols-3 gap-5">
-                <UtilizationCard title="Чистые" lossLimit={risk.cleanOpRisk} onExpand={() => setUtilizationOpen(true)} />
-                <UtilizationCard title="Кредитные" lossLimit={risk.creditOpRisk} onExpand={() => setUtilizationOpen(true)} />
-                <UtilizationCard title="Косвенные" lossLimit={risk.indirectLosses} onExpand={() => setUtilizationOpen(true)} />
+                {([
+                  { title: 'Чистые', limit: risk.cleanOpRisk, proposedLimit: proposed?.cleanOpRisk },
+                  { title: 'Кредитные', limit: risk.creditOpRisk, proposedLimit: proposed?.creditOpRisk },
+                  { title: 'Косвенные', limit: risk.indirectLosses, proposedLimit: proposed?.indirectLosses },
+                ] as const).map((item) => {
+                  const currentLimit = item.limit.limit ?? 0;
+                  const delta = currentLimit > 0 && item.proposedLimit != null
+                    ? Math.round(((item.proposedLimit - currentLimit) / currentLimit) * 100)
+                    : null;
+                  return (
+                    <div key={item.title} className="space-y-1.5">
+                      <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
+                      {campaignActive && (
+                        <div className="px-1 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <span className="text-primary/70 font-medium">Проект 2027:</span>
+                          {item.proposedLimit != null ? (
+                            <>
+                              <span>лимит <span className="font-medium text-foreground">{item.proposedLimit} млн ₽</span></span>
+                              {delta != null && delta !== 0 && (
+                                <span className={cn("font-medium", delta > 0 ? "text-destructive" : "text-primary")}>
+                                  {delta > 0 ? '+' : ''}{delta}%
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="italic">без изменений</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
