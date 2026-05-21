@@ -203,6 +203,17 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
 
   if (!risk) return null;
 
+  // Campaign context — show project 2027 comparison when an active campaign exists
+  const campaignActive = !!(risk.campaignStatus || risk.proposedLimits);
+  const proposed = risk.proposedLimits;
+
+  // Mock project 2027 potential losses (fallback ~+8% over current value)
+  const potential2027 = {
+    clean: proposed?.cleanOpRisk ?? Math.round((risk.cleanOpRisk.value || 0) * 1.08 * 10) / 10,
+    credit: proposed?.creditOpRisk ?? Math.round((risk.creditOpRisk.value || 0) * 1.08 * 10) / 10,
+    indirect: proposed?.indirectLosses ?? Math.round((risk.indirectLosses.value || 0) * 1.08 * 10) / 10,
+  };
+
   // AI message based on risk level
   const aiMessage = risk.riskLevel === 'Высокий'
     ? 'Уровень риска высокий. Рекомендуется проработать мероприятия по снижению или пересмотреть стратегию реагирования.'
