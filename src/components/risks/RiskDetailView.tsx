@@ -58,7 +58,7 @@ type SidebarTab = 'info' | 'approvers';
 
 import type { Scenario } from '@/types/risk';
 
-function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string }) {
+function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; campaignActive: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
   // Mock fact/forecast per scenario based on percentage
@@ -74,9 +74,13 @@ function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; ri
 
   // Potential losses for this scenario
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
+  // Mock project 2027 values
+  const potential2027 = Math.round(potentialLosses * 1.18);
+  const percent2027 = Math.min(100, scenario.percentage + 6);
 
   // Mock: has measures if scenario index is even
   const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
+  const measuresCount = hasMeasures ? 2 : 0;
 
   const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
 
@@ -86,15 +90,31 @@ function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; ri
         {/* Description */}
         <p className="text-sm text-foreground">{scenario.description}</p>
 
-        {/* Summary metrics */}
-        <div className="flex items-center gap-4 text-sm flex-wrap">
-          <span className="text-muted-foreground">Потенциальные: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
-          <span className="text-muted-foreground">Доля: <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
-          <span className="text-muted-foreground">Меры: <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? 'Есть' : 'Нет'}</span></span>
-          {totalFact > 0 && (
-            <span className="text-muted-foreground">Факт: <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>
-          )}
-        </div>
+        {/* Summary metrics — with project comparison when campaign is active */}
+        {campaignActive ? (
+          <div className="flex items-center gap-4 text-sm flex-wrap">
+            <span className="text-muted-foreground">
+              Потенциал: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
+              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
+              <span className="font-semibold text-primary">{fmtVal(potential2027)} ₽</span>
+            </span>
+            <span className="text-muted-foreground">
+              Вероятность: <span className="font-semibold text-foreground">{scenario.percentage}%</span>
+              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
+              <span className="font-semibold text-primary">{percent2027}%</span>
+            </span>
+            <span className="text-muted-foreground">Меры: <span className="font-medium text-foreground">{measuresCount}</span></span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4 text-sm flex-wrap">
+            <span className="text-muted-foreground">Потенциальные: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
+            <span className="text-muted-foreground">Доля: <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
+            <span className="text-muted-foreground">Меры: <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? 'Есть' : 'Нет'}</span></span>
+            {totalFact > 0 && (
+              <span className="text-muted-foreground">Факт: <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>
+            )}
+          </div>
+        )}
 
         {/* Tags: causeType & itService */}
         {(scenario.causeType || scenario.itService) && (
