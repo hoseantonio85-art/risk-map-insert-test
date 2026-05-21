@@ -265,6 +265,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             )}
 
+            {/* Subtle campaign context line */}
+            {campaignActive && (
+              <p className="text-xs text-muted-foreground -mb-2">
+                Лимитная кампания открыта: проект 2027 показан рядом с действующими значениями.
+              </p>
+            )}
+
+
             {/* Risk evaluation */}
             <section className="space-y-2">
               <h2 className="text-base font-semibold">Оценка риска</h2>
