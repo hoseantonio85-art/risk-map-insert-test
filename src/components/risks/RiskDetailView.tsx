@@ -373,26 +373,46 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               <h2 className="text-base font-semibold">Потенциальные потери</h2>
               <div className="grid grid-cols-3 gap-4">
                 {([
-                  { label: 'Чистые', value: risk.cleanOpRisk.value, delta: 12 },
-                  { label: 'Кредитные', value: risk.creditOpRisk.value, delta: -5 },
-                  { label: 'Косвенные', value: risk.indirectLosses.value, delta: 3 },
-                ] as const).map((item) => (
-                  <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
-                    <p className="text-lg font-semibold">{fmtVal(item.value)}</p>
-                    <div className="flex items-center gap-1.5">
-                      {item.delta > 0 ? (
-                        <TrendingUp className="w-3.5 h-3.5 text-destructive" />
+                  { label: 'Чистые', value: risk.cleanOpRisk.value, value2027: potential2027.clean },
+                  { label: 'Кредитные', value: risk.creditOpRisk.value, value2027: potential2027.credit },
+                  { label: 'Косвенные', value: risk.indirectLosses.value, value2027: potential2027.indirect },
+                ] as const).map((item) => {
+                  const delta = item.value > 0
+                    ? Math.round(((item.value2027 - item.value) / item.value) * 100)
+                    : 0;
+                  return (
+                    <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
+                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                      {campaignActive ? (
+                        <>
+                          <div className="space-y-0.5">
+                            <div className="flex items-baseline justify-between text-xs">
+                              <span className="text-muted-foreground">База</span>
+                              <span className="font-medium text-foreground">{fmtVal(item.value)} ₽</span>
+                            </div>
+                            <div className="flex items-baseline justify-between text-sm">
+                              <span className="text-primary/80">2027</span>
+                              <span className="font-semibold text-foreground">{fmtVal(item.value2027)} ₽</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-border/60">
+                            {delta > 0 ? (
+                              <TrendingUp className="w-3.5 h-3.5 text-destructive" />
+                            ) : delta < 0 ? (
+                              <TrendingDown className="w-3.5 h-3.5 text-primary" />
+                            ) : null}
+                            <span className={cn("text-xs font-medium", delta > 0 ? "text-destructive" : delta < 0 ? "text-primary" : "text-muted-foreground")}>
+                              {delta > 0 ? '+' : ''}{delta}%
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-1">к базе</span>
+                          </div>
+                        </>
                       ) : (
-                        <TrendingDown className="w-3.5 h-3.5 text-primary" />
+                        <p className="text-lg font-semibold">{fmtVal(item.value)}</p>
                       )}
-                      <span className={cn("text-xs font-medium", item.delta > 0 ? "text-destructive" : "text-primary")}>
-                        {item.delta > 0 ? '+' : ''}{item.delta}%
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-1">к пред. периоду</span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -402,7 +422,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               {risk.scenarios.length > 0 ? (
                 <div className="space-y-3">
                   {risk.scenarios.map((scenario) => (
-                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} />
+                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} campaignActive={campaignActive} />
                   ))}
                 </div>
               ) : (
