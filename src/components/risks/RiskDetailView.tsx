@@ -435,7 +435,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               <section id="mirroring" className="space-y-3">
                 <h2 className="text-base font-semibold">Зеркалирование</h2>
                 <div className="space-y-3">
-                  {risk.mirrors.map((mirror) => {
+                  {risk.mirrors.map((mirror, idx) => {
                     const mClean = Math.round((risk.cleanOpRisk.value || 0) * mirror.percentage / 100 * 10) / 10;
                     const mCleanLimit = Math.round((risk.cleanOpRisk.limit || 0) * mirror.percentage / 100 * 10) / 10;
                     const mCleanPct = mCleanLimit > 0 ? Math.round(mClean / mCleanLimit * 100) : 0;
@@ -448,14 +448,76 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                     const mIndirectLimit = Math.round((risk.indirectLosses.limit || 0) * mirror.percentage / 100 * 10) / 10;
                     const mIndirectPct = mIndirectLimit > 0 ? Math.round(mIndirect / mIndirectLimit * 100) : 0;
 
+                    // Mock project 2027 mirror values: scale current limit proportionally to overall proposed
+                    const m2027Clean = proposed?.cleanOpRisk != null
+                      ? Math.round(proposed.cleanOpRisk * mirror.percentage / 100 * 10) / 10
+                      : null;
+                    const m2027Credit = proposed?.creditOpRisk != null
+                      ? Math.round(proposed.creditOpRisk * mirror.percentage / 100 * 10) / 10
+                      : null;
+                    const m2027Indirect = proposed?.indirectLosses != null
+                      ? Math.round(proposed.indirectLosses * mirror.percentage / 100 * 10) / 10
+                      : null;
+
+                    const hasProjectMirror = campaignActive && (m2027Clean != null || m2027Credit != null || m2027Indirect != null);
+
+                    // Mock project status tag per mirror
+                    const projectStatuses = ['На согласовании', 'Проект согласован', 'Возвращено'] as const;
+                    const projectStatus = projectStatuses[idx % projectStatuses.length];
+                    const statusClass =
+                      projectStatus === 'Проект согласован' ? 'text-primary border-primary/40 bg-primary/8' :
+                      projectStatus === 'Возвращено' ? 'text-destructive border-destructive/30 bg-destructive/8' :
+                      'text-orange-500 border-orange-300 bg-orange-50/60';
+
                     return (
                       <div key={mirror.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
-                        <p className="text-sm font-medium">{mirror.subdivision}</p>
-                        <div className="flex items-center gap-5 text-sm flex-wrap">
-                          <span className="text-muted-foreground">Чистые: <span className="font-medium text-foreground">{mClean} млн</span> <span className={cn("text-xs font-medium", mCleanPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCleanPct}%</span></span>
-                          <span className="text-muted-foreground">Кредитные: <span className="font-medium text-foreground">{mCredit} млн</span> <span className={cn("text-xs font-medium", mCreditPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCreditPct}%</span></span>
-                          <span className="text-muted-foreground">Косвенные: <span className="font-medium text-foreground">{mIndirect} млн</span> <span className={cn("text-xs font-medium", mIndirectPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mIndirectPct}%</span></span>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium">{mirror.subdivision}</p>
+                          {hasProjectMirror && (
+                            <span className={cn("text-[11px] px-2 py-0.5 rounded-md font-medium border", statusClass)}>
+                              {projectStatus}
+                            </span>
+                          )}
                         </div>
+                        {hasProjectMirror ? (
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Чистые</span>
+                              <span>
+                                <span className="font-medium text-foreground">{mCleanLimit} млн ₽</span>
+                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
+                                <span className="font-semibold text-primary">{m2027Clean ?? mCleanLimit} млн ₽</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">В кредитовании</span>
+                              <span>
+                                <span className="font-medium text-foreground">{mCreditLimit} млн ₽</span>
+                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
+                                <span className="font-semibold text-primary">{m2027Credit ?? mCreditLimit} млн ₽</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Косвенные</span>
+                              <span>
+                                <span className="font-medium text-foreground">{mIndirectLimit} млн ₽</span>
+                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
+                                <span className="font-semibold text-primary">{m2027Indirect ?? mIndirectLimit} млн ₽</span>
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-5 text-sm flex-wrap">
+                              <span className="text-muted-foreground">Чистые: <span className="font-medium text-foreground">{mClean} млн</span> <span className={cn("text-xs font-medium", mCleanPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCleanPct}%</span></span>
+                              <span className="text-muted-foreground">Кредитные: <span className="font-medium text-foreground">{mCredit} млн</span> <span className={cn("text-xs font-medium", mCreditPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCreditPct}%</span></span>
+                              <span className="text-muted-foreground">Косвенные: <span className="font-medium text-foreground">{mIndirect} млн</span> <span className={cn("text-xs font-medium", mIndirectPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mIndirectPct}%</span></span>
+                            </div>
+                            {campaignActive && (
+                              <p className="text-[11px] text-muted-foreground italic">Без изменений в проекте 2027</p>
+                            )}
+                          </>
+                        )}
                       </div>
                     );
                   })}
