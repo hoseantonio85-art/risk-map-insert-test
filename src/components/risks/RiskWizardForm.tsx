@@ -1026,25 +1026,23 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </p>
                 </div>
 
-                {/* Summary cards — base vs 2027 estimate */}
+                {/* Summary cards — project 2027 primary, current as muted reference */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {([
                     { label: 'Чистые', base: basePotential.cleanOp, est: totals.cleanOp },
                     { label: 'В кредитовании', base: basePotential.creditOp, est: totals.creditOp },
                     { label: 'Косвенные', base: basePotential.indirect, est: totals.indirect },
                   ] as const).map(c => (
-                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
-                      <p className="text-xs text-muted-foreground">{c.label}</p>
-                      <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
-                        <span>База</span>
-                        <span className="font-medium text-foreground/80">{fmtBase(c.base)}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[11px] text-primary/80">2027</span>
-                        <p className="text-base font-medium">
-                          {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{c.label}</p>
+                      <p className="text-lg font-semibold leading-tight">
+                        {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                      </p>
+                      {campaignActive && (
+                        <p className="text-[11px] text-muted-foreground/80">
+                          Сейчас: <span className="font-medium text-foreground/70">{fmtBase(c.base)}</span>
                         </p>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
