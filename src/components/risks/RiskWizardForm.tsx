@@ -357,53 +357,46 @@ function CollapsibleScenario({
             className="min-h-[80px]"
           />
 
-          <div className="flex items-baseline justify-between mt-1">
-            <p className="text-xs font-medium text-muted-foreground">Потенциальные потери по сценарию</p>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              База текущего периода · <span className="text-primary/80">Оценка 2027</span>
-            </p>
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Чистые</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.cleanOp)}</p>
-              <FormattedInput
-                value={scenario.cleanOp}
-                onChange={v => onUpdate('cleanOp', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.creditOp)}</p>
-              <FormattedInput
-                value={scenario.creditOp}
-                onChange={v => onUpdate('creditOp', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.indirect)}</p>
-              <FormattedInput
-                value={scenario.indirect}
-                onChange={v => onUpdate('indirect', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-              <p className="text-[11px] text-muted-foreground/80">&nbsp;</p>
-              <FormattedInput
-                value={scenario.probability}
-                onChange={v => onUpdate('probability', v)}
-                placeholder="0"
-                min={0}
-                max={100}
-                showCurrency={false}
-              />
+          {/* Primary: Проект 2027 */}
+          <div className="space-y-2">
+            <p className="text-[10px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Чистые</Label>
+                <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+                <FormattedInput
+                  value={scenario.probability}
+                  onChange={v => onUpdate('probability', v)}
+                  placeholder="0"
+                  min={0}
+                  max={100}
+                  showCurrency={false}
+                />
+              </div>
             </div>
           </div>
+
+          {/* Secondary: collapsible current values */}
+          {base && (
+            <CurrentValuesCollapse
+              items={[
+                { label: 'Чистые', value: baseText(base?.cleanOp) },
+                { label: 'В кредитовании', value: baseText(base?.creditOp) },
+                { label: 'Косвенные', value: baseText(base?.indirect) },
+              ]}
+            />
+          )}
 
           <ExtraParamsBlock
             causeType={scenario.causeType}
@@ -411,6 +404,34 @@ function CollapsibleScenario({
             onCauseTypeChange={(v) => onUpdate('causeType', v)}
             onItServiceChange={(v) => onUpdate('itService', v)}
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Collapsible secondary layer for current ("Действует сейчас") values. */
+function CurrentValuesCollapse({ items }: { items: { label: string; value: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg bg-muted/40 border border-border/60">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 transition-colors rounded-lg"
+      >
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
+          Действует сейчас
+        </span>
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
+          {items.map(it => (
+            <span key={it.label} className="text-muted-foreground">
+              {it.label} <span className="font-medium text-foreground/80">{it.value}</span>
+            </span>
+          ))}
         </div>
       )}
     </div>
