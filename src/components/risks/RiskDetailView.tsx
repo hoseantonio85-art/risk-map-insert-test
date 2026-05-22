@@ -46,6 +46,36 @@ function StatusTag({ status }: { status: Risk['status'] }) {
   );
 }
 
+function MirrorCurrentCollapse({ items }: { items: { label: string; value: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg bg-muted/40 border border-border/60">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 transition-colors rounded-lg"
+      >
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
+          Действует сейчас
+        </span>
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 space-y-0.5 text-xs">
+          {items.map(it => (
+            <div key={it.label} className="flex items-center justify-between">
+              <span className="text-muted-foreground">{it.label}</span>
+              <span className="font-medium text-foreground/80">{it.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 const sections = [
   { id: 'utilization', label: 'Утилизация' },
   { id: 'potential', label: 'Потенциальные потери' },
@@ -85,74 +115,83 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
   const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="p-4 space-y-2">
         {/* Description */}
         <p className="text-sm text-foreground">{scenario.description}</p>
 
-        {/* Summary metrics — with project comparison when campaign is active */}
-        {campaignActive ? (
-          <div className="flex items-center gap-4 text-sm flex-wrap">
-            <span className="text-muted-foreground">
-              Потенциал: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
-              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
-              <span className="font-semibold text-primary">{fmtVal(potential2027)} ₽</span>
-            </span>
-            <span className="text-muted-foreground">
-              Вероятность: <span className="font-semibold text-foreground">{scenario.percentage}%</span>
-              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
-              <span className="font-semibold text-primary">{percent2027}%</span>
-            </span>
-            <span className="text-muted-foreground">Меры: <span className="font-medium text-foreground">{measuresCount}</span></span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-4 text-sm flex-wrap">
-            <span className="text-muted-foreground">Потенциальные: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
-            <span className="text-muted-foreground">Доля: <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
-            <span className="text-muted-foreground">Меры: <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? 'Есть' : 'Нет'}</span></span>
-            {totalFact > 0 && (
-              <span className="text-muted-foreground">Факт: <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>
-            )}
-          </div>
-        )}
+        {/* Primary metrics — Project 2027 when campaign is active, otherwise current */}
+        <div className="flex items-center gap-4 text-sm flex-wrap">
+          {campaignActive ? (
+            <>
+              <span className="text-muted-foreground">
+                Потенциал <span className="font-semibold text-foreground">{fmtVal(potential2027)} ₽</span>
+              </span>
+              <span className="text-muted-foreground">
+                Вероятность <span className="font-semibold text-foreground">{percent2027}%</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground">
+                Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
+              </span>
+              <span className="text-muted-foreground">
+                Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
+              </span>
+            </>
+          )}
+          <span className="text-muted-foreground">
+            Меры <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? `Есть · ${measuresCount}` : 'Нет'}</span>
+          </span>
+        </div>
 
-        {/* Tags: causeType & itService */}
+        {/* Tags */}
         {(scenario.causeType || scenario.itService) && (
           <div className="flex items-center gap-2 flex-wrap">
             {scenario.causeType && (
-              <span
-                title={scenario.causeType}
-                className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block"
-              >
+              <span title={scenario.causeType} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
                 {truncate(scenario.causeType, 35)}
               </span>
             )}
             {scenario.itService && (
-              <span
-                title={scenario.itService}
-                className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block"
-              >
+              <span title={scenario.itService} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
                 {truncate(scenario.itService, 35)}
               </span>
             )}
           </div>
         )}
 
-        {/* Expand toggle */}
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1 text-xs text-primary hover:underline pt-1"
         >
           {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          Подробнее
+          {campaignActive ? 'Показать действующие значения и детали' : 'Подробнее'}
         </button>
       </div>
 
-      {/* Expanded details */}
       {expanded && (
-        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border">
-          <div className="pt-3 grid grid-cols-2 gap-4">
+        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-border/60">
+          {/* Current values reference (campaign mode) */}
+          {campaignActive && (
+            <div className="pt-3 rounded-lg bg-muted/40 border border-border/60 p-3 space-y-1.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
+                Действует сейчас
+              </p>
+              <div className="flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
+                <span className="text-muted-foreground">Потенциал <span className="font-medium text-foreground/80">{fmtVal(potentialLosses)} ₽</span></span>
+                <span className="text-muted-foreground">Доля <span className="font-medium text-foreground/80">{scenario.percentage}%</span></span>
+                {totalFact > 0 && (
+                  <span className="text-muted-foreground">Факт <span className="font-medium text-foreground/80">{fmtVal(totalFact)} ₽</span></span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Fact / Forecast technical breakdown */}
+          <div className={cn("grid grid-cols-2 gap-4", !campaignActive && "pt-3")}>
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
               <div className="space-y-1 text-sm">
@@ -170,7 +209,7 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground pt-1">
+          <div className="text-xs text-muted-foreground">
             Источник: <span className="text-foreground">Ручное создание</span>
           </div>
         </div>
@@ -381,34 +420,25 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                     ? Math.round(((item.value2027 - item.value) / item.value) * 100)
                     : 0;
                   return (
-                    <div key={item.label} className="p-4 rounded-xl border border-border bg-card space-y-2">
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-card space-y-1.5">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
                       {campaignActive ? (
                         <>
-                          <div className="space-y-0.5">
-                            <div className="flex items-baseline justify-between text-xs">
-                              <span className="text-muted-foreground">База</span>
-                              <span className="font-medium text-foreground">{fmtVal(item.value)} ₽</span>
-                            </div>
-                            <div className="flex items-baseline justify-between text-sm">
-                              <span className="text-primary/80">2027</span>
-                              <span className="font-semibold text-foreground">{fmtVal(item.value2027)} ₽</span>
-                            </div>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-lg font-semibold leading-tight">{fmtVal(item.value2027)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                            {delta !== 0 && (
+                              <span className={cn("text-[11px] font-medium inline-flex items-center gap-0.5", delta > 0 ? "text-destructive" : "text-primary")}>
+                                {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                {delta > 0 ? '+' : ''}{delta}%
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5 pt-1 border-t border-border/60">
-                            {delta > 0 ? (
-                              <TrendingUp className="w-3.5 h-3.5 text-destructive" />
-                            ) : delta < 0 ? (
-                              <TrendingDown className="w-3.5 h-3.5 text-primary" />
-                            ) : null}
-                            <span className={cn("text-xs font-medium", delta > 0 ? "text-destructive" : delta < 0 ? "text-primary" : "text-muted-foreground")}>
-                              {delta > 0 ? '+' : ''}{delta}%
-                            </span>
-                            <span className="text-xs text-muted-foreground ml-1">к базе</span>
-                          </div>
+                          <p className="text-[11px] text-muted-foreground/80">
+                            Сейчас: <span className="font-medium text-foreground/70">{fmtVal(item.value)} ₽</span>
+                          </p>
                         </>
                       ) : (
-                        <p className="text-lg font-semibold">{fmtVal(item.value)}</p>
+                        <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                       )}
                     </div>
                   );
@@ -470,7 +500,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                       'text-orange-500 border-orange-300 bg-orange-50/60';
 
                     return (
-                      <div key={mirror.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
+                      <div key={mirror.id} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium">{mirror.subdivision}</p>
                           {hasProjectMirror && (
@@ -480,32 +510,23 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           )}
                         </div>
                         {hasProjectMirror ? (
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Чистые</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mCleanLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Clean ?? mCleanLimit} млн ₽</span>
-                              </span>
+                          <>
+                            <div className="space-y-1">
+                              <p className="text-[11px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
+                              <div className="space-y-0.5 text-sm">
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-semibold">{m2027Clean ?? mCleanLimit} млн ₽</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">В кредитовании</span><span className="font-semibold">{m2027Credit ?? mCreditLimit} млн ₽</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-semibold">{m2027Indirect ?? mIndirectLimit} млн ₽</span></div>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">В кредитовании</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mCreditLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Credit ?? mCreditLimit} млн ₽</span>
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Косвенные</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mIndirectLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Indirect ?? mIndirectLimit} млн ₽</span>
-                              </span>
-                            </div>
-                          </div>
+                            <MirrorCurrentCollapse
+                              items={[
+                                { label: 'Чистые', value: `${mCleanLimit} млн ₽` },
+                                { label: 'В кредитовании', value: `${mCreditLimit} млн ₽` },
+                                { label: 'Косвенные', value: `${mIndirectLimit} млн ₽` },
+                              ]}
+                            />
+                          </>
                         ) : (
                           <>
                             <div className="flex items-center gap-5 text-sm flex-wrap">

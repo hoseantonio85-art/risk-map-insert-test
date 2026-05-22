@@ -357,53 +357,46 @@ function CollapsibleScenario({
             className="min-h-[80px]"
           />
 
-          <div className="flex items-baseline justify-between mt-1">
-            <p className="text-xs font-medium text-muted-foreground">Потенциальные потери по сценарию</p>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-              База текущего периода · <span className="text-primary/80">Оценка 2027</span>
-            </p>
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Чистые</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.cleanOp)}</p>
-              <FormattedInput
-                value={scenario.cleanOp}
-                onChange={v => onUpdate('cleanOp', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Кредитные потери</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.creditOp)}</p>
-              <FormattedInput
-                value={scenario.creditOp}
-                onChange={v => onUpdate('creditOp', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Косвенные потери</Label>
-              <p className="text-[11px] text-muted-foreground/80">База: {baseText(base?.indirect)}</p>
-              <FormattedInput
-                value={scenario.indirect}
-                onChange={v => onUpdate('indirect', v)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-              <p className="text-[11px] text-muted-foreground/80">&nbsp;</p>
-              <FormattedInput
-                value={scenario.probability}
-                onChange={v => onUpdate('probability', v)}
-                placeholder="0"
-                min={0}
-                max={100}
-                showCurrency={false}
-              />
+          {/* Primary: Проект 2027 */}
+          <div className="space-y-2">
+            <p className="text-[10px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Чистые</Label>
+                <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+                <FormattedInput
+                  value={scenario.probability}
+                  onChange={v => onUpdate('probability', v)}
+                  placeholder="0"
+                  min={0}
+                  max={100}
+                  showCurrency={false}
+                />
+              </div>
             </div>
           </div>
+
+          {/* Secondary: collapsible current values */}
+          {base && (
+            <CurrentValuesCollapse
+              items={[
+                { label: 'Чистые', value: baseText(base?.cleanOp) },
+                { label: 'В кредитовании', value: baseText(base?.creditOp) },
+                { label: 'Косвенные', value: baseText(base?.indirect) },
+              ]}
+            />
+          )}
 
           <ExtraParamsBlock
             causeType={scenario.causeType}
@@ -411,6 +404,34 @@ function CollapsibleScenario({
             onCauseTypeChange={(v) => onUpdate('causeType', v)}
             onItServiceChange={(v) => onUpdate('itService', v)}
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Collapsible secondary layer for current ("Действует сейчас") values. */
+function CurrentValuesCollapse({ items }: { items: { label: string; value: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg bg-muted/40 border border-border/60">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 transition-colors rounded-lg"
+      >
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
+          Действует сейчас
+        </span>
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
+          {items.map(it => (
+            <span key={it.label} className="text-muted-foreground">
+              {it.label} <span className="font-medium text-foreground/80">{it.value}</span>
+            </span>
+          ))}
         </div>
       )}
     </div>
@@ -958,12 +979,12 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
               )}
 
               {/* === Рамка 1: Лимиты на период === */}
-              <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
+              <div ref={limitsRef} className="p-6 rounded-xl border border-border/60 bg-card space-y-4">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-base font-semibold">Лимиты на период</h3>
                   {campaignActive && (
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-                      Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                    <span className="text-[10px] uppercase tracking-wide text-primary/80 font-medium">
+                      Проект 2027
                     </span>
                   )}
                 </div>
@@ -974,21 +995,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     { label: 'Косвенные', base: baseLimits.indirect, value: indirectLimit, set: setIndirectLimit, warn: limitWarnings.indirect },
                   ] as const).map(row => (
                     <div key={row.label} className="space-y-1.5">
-                      <Label className="text-xs font-medium">{row.label}</Label>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>Действует сейчас</span>
-                        <span className="font-medium text-foreground/80">{fmtBase(row.base)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] text-primary/80 shrink-0">Проект 2027</span>
-                        <div className="flex-1 max-w-[160px]">
-                          <FormattedInput
-                            value={row.value}
-                            onChange={v => handleLimitChange(row.set, v)}
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
+                      <Label className="text-xs font-medium text-muted-foreground">{row.label}</Label>
+                      <FormattedInput
+                        value={row.value}
+                        onChange={v => handleLimitChange(row.set, v)}
+                        placeholder="0"
+                      />
+                      {campaignActive && (
+                        <p className="text-[11px] text-muted-foreground/80 pl-0.5">
+                          Действует сейчас: <span className="font-medium text-foreground/70">{fmtBase(row.base)}</span>
+                        </p>
+                      )}
                       {row.warn && (
                         <p className="text-xs text-destructive flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
@@ -1009,25 +1026,23 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </p>
                 </div>
 
-                {/* Summary cards — base vs 2027 estimate */}
+                {/* Summary cards — project 2027 primary, current as muted reference */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {([
                     { label: 'Чистые', base: basePotential.cleanOp, est: totals.cleanOp },
                     { label: 'В кредитовании', base: basePotential.creditOp, est: totals.creditOp },
                     { label: 'Косвенные', base: basePotential.indirect, est: totals.indirect },
                   ] as const).map(c => (
-                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border space-y-1">
-                      <p className="text-xs text-muted-foreground">{c.label}</p>
-                      <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
-                        <span>База</span>
-                        <span className="font-medium text-foreground/80">{fmtBase(c.base)}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-[11px] text-primary/80">2027</span>
-                        <p className="text-base font-medium">
-                          {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                    <div key={c.label} className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{c.label}</p>
+                      <p className="text-lg font-semibold leading-tight">
+                        {formatNum(c.est)} <span className="text-xs font-normal text-muted-foreground">₽</span>
+                      </p>
+                      {campaignActive && (
+                        <p className="text-[11px] text-muted-foreground/80">
+                          Сейчас: <span className="font-medium text-foreground/70">{fmtBase(c.base)}</span>
                         </p>
-                      </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1182,21 +1197,9 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </Select>
                   </div>
 
-                  {/* Current active mirror values — readonly */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Действует сейчас</p>
-                    <p className="text-xs text-foreground/80">
-                      Чистые <span className="font-medium">{fmtBase(base?.cleanOp)}</span>
-                      <span className="text-muted-foreground/60"> · </span>
-                      В кредитовании <span className="font-medium">{fmtBase(base?.creditOp)}</span>
-                      <span className="text-muted-foreground/60"> · </span>
-                      Косвенные <span className="font-medium">{fmtBase(base?.indirect)}</span>
-                    </p>
-                  </div>
-
-                  {/* Project 2027 editable */}
+                  {/* Project 2027 editable — primary */}
                   <div className="space-y-1.5">
-                    <p className="text-[11px] uppercase tracking-wide text-primary/80">Проект 2027</p>
+                    <p className="text-[11px] uppercase tracking-wide text-primary/80 font-medium">Проект 2027</p>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Чистые</Label>
@@ -1224,6 +1227,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                       </div>
                     </div>
                   </div>
+
+                  {/* Secondary: collapsible current values */}
+                  {base && (
+                    <CurrentValuesCollapse
+                      items={[
+                        { label: 'Чистые', value: fmtBase(base?.cleanOp) },
+                        { label: 'В кредитовании', value: fmtBase(base?.creditOp) },
+                        { label: 'Косвенные', value: fmtBase(base?.indirect) },
+                      ]}
+                    />
+                  )}
                 </div>
                 );
               })}
