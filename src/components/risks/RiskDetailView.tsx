@@ -72,6 +72,9 @@ function MirrorCurrentCollapse({ items }: { items: { label: string; value: strin
       )}
     </div>
   );
+}
+
+
 
 const sections = [
   { id: 'utilization', label: 'Утилизация' },
