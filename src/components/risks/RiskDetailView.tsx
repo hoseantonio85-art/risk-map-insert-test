@@ -470,7 +470,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                       'text-orange-500 border-orange-300 bg-orange-50/60';
 
                     return (
-                      <div key={mirror.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
+                      <div key={mirror.id} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium">{mirror.subdivision}</p>
                           {hasProjectMirror && (
@@ -480,32 +480,23 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           )}
                         </div>
                         {hasProjectMirror ? (
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Чистые</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mCleanLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Clean ?? mCleanLimit} млн ₽</span>
-                              </span>
+                          <>
+                            <div className="space-y-1">
+                              <p className="text-[11px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
+                              <div className="space-y-0.5 text-sm">
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-semibold">{m2027Clean ?? mCleanLimit} млн ₽</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">В кредитовании</span><span className="font-semibold">{m2027Credit ?? mCreditLimit} млн ₽</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-semibold">{m2027Indirect ?? mIndirectLimit} млн ₽</span></div>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">В кредитовании</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mCreditLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Credit ?? mCreditLimit} млн ₽</span>
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Косвенные</span>
-                              <span>
-                                <span className="font-medium text-foreground">{mIndirectLimit} млн ₽</span>
-                                <ArrowRight className="inline w-3 h-3 mx-1.5 text-muted-foreground/70" />
-                                <span className="font-semibold text-primary">{m2027Indirect ?? mIndirectLimit} млн ₽</span>
-                              </span>
-                            </div>
-                          </div>
+                            <MirrorCurrentCollapse
+                              items={[
+                                { label: 'Чистые', value: `${mCleanLimit} млн ₽` },
+                                { label: 'В кредитовании', value: `${mCreditLimit} млн ₽` },
+                                { label: 'Косвенные', value: `${mIndirectLimit} млн ₽` },
+                              ]}
+                            />
+                          </>
                         ) : (
                           <>
                             <div className="flex items-center gap-5 text-sm flex-wrap">
