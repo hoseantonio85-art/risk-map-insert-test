@@ -979,12 +979,12 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
               )}
 
               {/* === Рамка 1: Лимиты на период === */}
-              <div ref={limitsRef} className="p-6 rounded-xl border border-border bg-card space-y-4">
+              <div ref={limitsRef} className="p-6 rounded-xl border border-border/60 bg-card space-y-4">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-base font-semibold">Лимиты на период</h3>
                   {campaignActive && (
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-                      Действует сейчас · <span className="text-primary/80">Проект 2027</span>
+                    <span className="text-[10px] uppercase tracking-wide text-primary/80 font-medium">
+                      Проект 2027
                     </span>
                   )}
                 </div>
@@ -995,21 +995,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     { label: 'Косвенные', base: baseLimits.indirect, value: indirectLimit, set: setIndirectLimit, warn: limitWarnings.indirect },
                   ] as const).map(row => (
                     <div key={row.label} className="space-y-1.5">
-                      <Label className="text-xs font-medium">{row.label}</Label>
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>Действует сейчас</span>
-                        <span className="font-medium text-foreground/80">{fmtBase(row.base)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] text-primary/80 shrink-0">Проект 2027</span>
-                        <div className="flex-1 max-w-[160px]">
-                          <FormattedInput
-                            value={row.value}
-                            onChange={v => handleLimitChange(row.set, v)}
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
+                      <Label className="text-xs font-medium text-muted-foreground">{row.label}</Label>
+                      <FormattedInput
+                        value={row.value}
+                        onChange={v => handleLimitChange(row.set, v)}
+                        placeholder="0"
+                      />
+                      {campaignActive && (
+                        <p className="text-[11px] text-muted-foreground/80 pl-0.5">
+                          Действует сейчас: <span className="font-medium text-foreground/70">{fmtBase(row.base)}</span>
+                        </p>
+                      )}
                       {row.warn && (
                         <p className="text-xs text-destructive flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
