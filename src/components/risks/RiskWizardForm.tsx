@@ -1197,21 +1197,9 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                     </Select>
                   </div>
 
-                  {/* Current active mirror values — readonly */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Действует сейчас</p>
-                    <p className="text-xs text-foreground/80">
-                      Чистые <span className="font-medium">{fmtBase(base?.cleanOp)}</span>
-                      <span className="text-muted-foreground/60"> · </span>
-                      В кредитовании <span className="font-medium">{fmtBase(base?.creditOp)}</span>
-                      <span className="text-muted-foreground/60"> · </span>
-                      Косвенные <span className="font-medium">{fmtBase(base?.indirect)}</span>
-                    </p>
-                  </div>
-
-                  {/* Project 2027 editable */}
+                  {/* Project 2027 editable — primary */}
                   <div className="space-y-1.5">
-                    <p className="text-[11px] uppercase tracking-wide text-primary/80">Проект 2027</p>
+                    <p className="text-[11px] uppercase tracking-wide text-primary/80 font-medium">Проект 2027</p>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Чистые</Label>
@@ -1239,6 +1227,17 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                       </div>
                     </div>
                   </div>
+
+                  {/* Secondary: collapsible current values */}
+                  {base && (
+                    <CurrentValuesCollapse
+                      items={[
+                        { label: 'Чистые', value: fmtBase(base?.cleanOp) },
+                        { label: 'В кредитовании', value: fmtBase(base?.creditOp) },
+                        { label: 'Косвенные', value: fmtBase(base?.indirect) },
+                      ]}
+                    />
+                  )}
                 </div>
                 );
               })}
