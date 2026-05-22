@@ -85,74 +85,83 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
   const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="p-4 space-y-2">
         {/* Description */}
         <p className="text-sm text-foreground">{scenario.description}</p>
 
-        {/* Summary metrics — with project comparison when campaign is active */}
-        {campaignActive ? (
-          <div className="flex items-center gap-4 text-sm flex-wrap">
-            <span className="text-muted-foreground">
-              Потенциал: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
-              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
-              <span className="font-semibold text-primary">{fmtVal(potential2027)} ₽</span>
-            </span>
-            <span className="text-muted-foreground">
-              Вероятность: <span className="font-semibold text-foreground">{scenario.percentage}%</span>
-              <ArrowRight className="inline w-3 h-3 mx-1 text-muted-foreground/70" />
-              <span className="font-semibold text-primary">{percent2027}%</span>
-            </span>
-            <span className="text-muted-foreground">Меры: <span className="font-medium text-foreground">{measuresCount}</span></span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-4 text-sm flex-wrap">
-            <span className="text-muted-foreground">Потенциальные: <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
-            <span className="text-muted-foreground">Доля: <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
-            <span className="text-muted-foreground">Меры: <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? 'Есть' : 'Нет'}</span></span>
-            {totalFact > 0 && (
-              <span className="text-muted-foreground">Факт: <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>
-            )}
-          </div>
-        )}
+        {/* Primary metrics — Project 2027 when campaign is active, otherwise current */}
+        <div className="flex items-center gap-4 text-sm flex-wrap">
+          {campaignActive ? (
+            <>
+              <span className="text-muted-foreground">
+                Потенциал <span className="font-semibold text-foreground">{fmtVal(potential2027)} ₽</span>
+              </span>
+              <span className="text-muted-foreground">
+                Вероятность <span className="font-semibold text-foreground">{percent2027}%</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground">
+                Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
+              </span>
+              <span className="text-muted-foreground">
+                Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
+              </span>
+            </>
+          )}
+          <span className="text-muted-foreground">
+            Меры <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? `Есть · ${measuresCount}` : 'Нет'}</span>
+          </span>
+        </div>
 
-        {/* Tags: causeType & itService */}
+        {/* Tags */}
         {(scenario.causeType || scenario.itService) && (
           <div className="flex items-center gap-2 flex-wrap">
             {scenario.causeType && (
-              <span
-                title={scenario.causeType}
-                className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block"
-              >
+              <span title={scenario.causeType} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
                 {truncate(scenario.causeType, 35)}
               </span>
             )}
             {scenario.itService && (
-              <span
-                title={scenario.itService}
-                className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block"
-              >
+              <span title={scenario.itService} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
                 {truncate(scenario.itService, 35)}
               </span>
             )}
           </div>
         )}
 
-        {/* Expand toggle */}
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1 text-xs text-primary hover:underline pt-1"
         >
           {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          Подробнее
+          {campaignActive ? 'Показать действующие значения и детали' : 'Подробнее'}
         </button>
       </div>
 
-      {/* Expanded details */}
       {expanded && (
-        <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border">
-          <div className="pt-3 grid grid-cols-2 gap-4">
+        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-border/60">
+          {/* Current values reference (campaign mode) */}
+          {campaignActive && (
+            <div className="pt-3 rounded-lg bg-muted/40 border border-border/60 p-3 space-y-1.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
+                Действует сейчас
+              </p>
+              <div className="flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
+                <span className="text-muted-foreground">Потенциал <span className="font-medium text-foreground/80">{fmtVal(potentialLosses)} ₽</span></span>
+                <span className="text-muted-foreground">Доля <span className="font-medium text-foreground/80">{scenario.percentage}%</span></span>
+                {totalFact > 0 && (
+                  <span className="text-muted-foreground">Факт <span className="font-medium text-foreground/80">{fmtVal(totalFact)} ₽</span></span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Fact / Forecast technical breakdown */}
+          <div className={cn("grid grid-cols-2 gap-4", !campaignActive && "pt-3")}>
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
               <div className="space-y-1 text-sm">
@@ -170,7 +179,7 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground pt-1">
+          <div className="text-xs text-muted-foreground">
             Источник: <span className="text-foreground">Ручное создание</span>
           </div>
         </div>
