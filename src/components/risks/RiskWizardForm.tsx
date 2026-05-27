@@ -681,35 +681,22 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     </div>
   );
 
-  // Limits memo — rendered as a separate floating element above footer
+  // Limits memo — single, compact summary of current limit values (used during scroll)
   const limitsMemoElement = (
     <>
       {showLimitsMemo && (
         <div className="sticky bottom-0 z-10 mx-auto px-8" style={{ maxWidth: '1240px' }}>
-          <div className="flex items-stretch gap-4 px-4 py-2.5 rounded-lg border border-border bg-card shadow-sm">
-            {/* Действует сейчас */}
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground mb-1">Действует сейчас</p>
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-xs"><span className="text-muted-foreground">Чистые </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.cleanOp)}</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">В кредитовании </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.creditOp)}</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">Косвенные </span><span className="font-semibold text-foreground/80">{fmtBase(baseLimits.indirect)}</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">Потенциальные </span><span className="font-semibold text-foreground/80">{editRisk?.potentialLosses != null ? `${formatNum(editRisk.potentialLosses)} ₽` : '—'}</span></span>
-              </div>
-            </div>
-            {/* Проект 2027 */}
-            <div className="flex-1 min-w-0 border-l border-border pl-4">
-              <p className="text-[10px] uppercase tracking-wide font-medium text-primary/80 mb-1">Проект 2027</p>
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-xs"><span className="text-muted-foreground">Чистые </span><span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">В кредитовании </span><span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">Косвенные </span><span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span></span>
-                <span className="text-xs"><span className="text-muted-foreground">Потенциальные </span><span className="font-semibold text-foreground">{formatNum(totals.total)} ₽</span></span>
-              </div>
+          <div className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card shadow-sm">
+            <p className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground shrink-0">Лимиты</p>
+            <div className="flex-1 flex items-center gap-4 flex-wrap">
+              <span className="text-xs"><span className="text-muted-foreground">Чистые </span><span className="font-semibold text-foreground">{formatNum(cleanOpLimit)} ₽</span></span>
+              <span className="text-xs"><span className="text-muted-foreground">В кредитовании </span><span className="font-semibold text-foreground">{formatNum(creditOpLimit)} ₽</span></span>
+              <span className="text-xs"><span className="text-muted-foreground">Косвенные </span><span className="font-semibold text-foreground">{formatNum(indirectLimit)} ₽</span></span>
+              <span className="text-xs"><span className="text-muted-foreground">Потенциальные </span><span className="font-semibold text-foreground">{formatNum(totals.total)} ₽</span></span>
             </div>
             <button
               onClick={() => setMemoDismissed(true)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors shrink-0 self-start"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-muted transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
@@ -729,6 +716,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       )}
     </>
   );
+
 
   // Step accordion header renderer
   const renderStepHeader = (step: WizardStep, label: string) => {
