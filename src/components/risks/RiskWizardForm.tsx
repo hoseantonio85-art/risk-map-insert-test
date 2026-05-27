@@ -392,33 +392,6 @@ function CollapsibleScenario({
   );
 }
 
-/** Collapsible secondary layer for current ("Действует сейчас") values. */
-function CurrentValuesCollapse({ items }: { items: { label: string; value: string }[] }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-lg bg-muted/40 border border-border/60">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 transition-colors rounded-lg"
-      >
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
-          Действует сейчас
-        </span>
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
-      </button>
-      {open && (
-        <div className="px-3 pb-3 pt-1 flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
-          {items.map(it => (
-            <span key={it.label} className="text-muted-foreground">
-              {it.label} <span className="font-medium text-foreground/80">{it.value}</span>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizardFormProps) {
   const isEditMode = !!editRisk;
