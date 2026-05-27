@@ -282,7 +282,6 @@ function ExtraParamsBlock({
 
 function CollapsibleScenario({
   scenario,
-  base,
   index,
   scenarioTotal,
   percentage,
@@ -291,7 +290,6 @@ function CollapsibleScenario({
   onUpdate,
 }: {
   scenario: ScenarioFormData;
-  base?: { cleanOp: number; creditOp: number; indirect: number };
   index: number;
   scenarioTotal: number;
   percentage: number;
@@ -300,7 +298,6 @@ function CollapsibleScenario({
   onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
-  const baseText = (v?: number) => v != null ? `${formatNum(v)} ₽` : '—';
 
   return (
     <div className="rounded-xl bg-muted/40 border border-border overflow-hidden">
@@ -357,46 +354,31 @@ function CollapsibleScenario({
             className="min-h-[80px]"
           />
 
-          {/* Primary: Проект 2027 */}
-          <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Чистые</Label>
-                <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">В кредитовании</Label>
-                <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Косвенные</Label>
-                <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-                <FormattedInput
-                  value={scenario.probability}
-                  onChange={v => onUpdate('probability', v)}
-                  placeholder="0"
-                  min={0}
-                  max={100}
-                  showCurrency={false}
-                />
-              </div>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Чистые</Label>
+              <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+              <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Косвенные</Label>
+              <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+              <FormattedInput
+                value={scenario.probability}
+                onChange={v => onUpdate('probability', v)}
+                placeholder="0"
+                min={0}
+                max={100}
+                showCurrency={false}
+              />
             </div>
           </div>
-
-          {/* Secondary: collapsible current values */}
-          {base && (
-            <CurrentValuesCollapse
-              items={[
-                { label: 'Чистые', value: baseText(base?.cleanOp) },
-                { label: 'В кредитовании', value: baseText(base?.creditOp) },
-                { label: 'Косвенные', value: baseText(base?.indirect) },
-              ]}
-            />
-          )}
 
           <ExtraParamsBlock
             causeType={scenario.causeType}
