@@ -88,6 +88,13 @@ export interface Scenario {
   itService?: string;
 }
 
+export type MirrorApprovalStatus =
+  | 'Черновик'
+  | 'Требует согласования'
+  | 'Согласовано'
+  | 'Возвращено'
+  | 'Ожидает другого согласующего';
+
 export interface Mirror {
   id: string;
   subdivision: string;
@@ -96,6 +103,17 @@ export interface Mirror {
   factPercentage?: number;
   limitLastYear?: number;
   utilizationLastYear?: string;
+
+  // Mirror approval workflow (independent of risk status)
+  approvalStatus?: MirrorApprovalStatus;
+  approver?: string;
+  isMine?: boolean;
+  returnComment?: string;
+  nextYearLimits?: {
+    cleanOp?: number;
+    creditOp?: number;
+    indirect?: number;
+  };
 }
 
 export interface Incident {

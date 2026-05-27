@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { History, Plus, FileText, Sparkles, TrendingUp, TrendingDown, ArrowRight, Pencil, XCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { History, Plus, FileText, Sparkles, Pencil, XCircle, ArrowRight, Check, Undo2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FullscreenLightbox } from '@/components/ui/fullscreen-lightbox';
 import { UtilizationDrawer } from './UtilizationDrawer';
 import { HistoryDrawer } from './HistoryDrawer';
 import { UtilizationCard } from './UtilizationCard';
-import { Risk } from '@/types/risk';
+import { Risk, Mirror, MirrorApprovalStatus } from '@/types/risk';
 import { cn } from '@/lib/utils';
 import { mockMeasures } from '@/data/mockRisks';
 
@@ -46,35 +49,21 @@ function StatusTag({ status }: { status: Risk['status'] }) {
   );
 }
 
-function MirrorCurrentCollapse({ items }: { items: { label: string; value: string }[] }) {
-  const [open, setOpen] = useState(false);
+const mirrorStatusStyles: Record<MirrorApprovalStatus, string> = {
+  'Черновик': 'text-muted-foreground border-muted-foreground/30 bg-muted/40',
+  'Требует согласования': 'text-orange-600 border-orange-300 bg-orange-50/60',
+  'Согласовано': 'text-primary border-primary/30 bg-primary/8',
+  'Возвращено': 'text-destructive border-destructive/30 bg-destructive/8',
+  'Ожидает другого согласующего': 'text-muted-foreground border-border bg-muted/40',
+};
+
+function MirrorStatusTag({ status }: { status: MirrorApprovalStatus }) {
   return (
-    <div className="rounded-lg bg-muted/40 border border-border/60">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/60 transition-colors rounded-lg"
-      >
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
-          Действует сейчас
-        </span>
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
-      </button>
-      {open && (
-        <div className="px-3 pb-3 pt-1 space-y-0.5 text-xs">
-          {items.map(it => (
-            <div key={it.label} className="flex items-center justify-between">
-              <span className="text-muted-foreground">{it.label}</span>
-              <span className="font-medium text-foreground/80">{it.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <span className={cn("text-[11px] px-2 py-0.5 rounded-md font-medium border whitespace-nowrap", mirrorStatusStyles[status])}>
+      {status}
+    </span>
   );
 }
-
-
 
 const sections = [
   { id: 'utilization', label: 'Утилизация' },
@@ -88,10 +77,10 @@ type SidebarTab = 'info' | 'approvers';
 
 import type { Scenario } from '@/types/risk';
 
-function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; campaignActive: boolean }) {
+/** Scenario detail card — pure current risk assessment view, no next-year/project logic. */
+function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Mock fact/forecast per scenario based on percentage
   const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
@@ -100,53 +89,35 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
   const forecastClean = Math.round(factClean * 1.2 * 10) / 10;
   const forecastCredit = Math.round(factCredit * 1.15 * 10) / 10;
   const forecastIndirect = Math.round(factIndirect * 1.1 * 10) / 10;
-  const totalForecast = forecastClean + forecastCredit + forecastIndirect;
 
-  // Potential losses for this scenario
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
-  // Mock project 2027 values
-  const potential2027 = Math.round(potentialLosses * 1.18);
-  const percent2027 = Math.min(100, scenario.percentage + 6);
 
-  // Mock: has measures if scenario index is even
   const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
   const measuresCount = hasMeasures ? 2 : 0;
-
   const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
 
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="p-4 space-y-2">
-        {/* Description */}
         <p className="text-sm text-foreground">{scenario.description}</p>
 
-        {/* Primary metrics — Project 2027 when campaign is active, otherwise current */}
         <div className="flex items-center gap-4 text-sm flex-wrap">
-          {campaignActive ? (
-            <>
-              <span className="text-muted-foreground">
-                Потенциал <span className="font-semibold text-foreground">{fmtVal(potential2027)} ₽</span>
-              </span>
-              <span className="text-muted-foreground">
-                Вероятность <span className="font-semibold text-foreground">{percent2027}%</span>
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-muted-foreground">
-                Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
-              </span>
-              <span className="text-muted-foreground">
-                Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
-              </span>
-            </>
+          <span className="text-muted-foreground">
+            Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
+          </span>
+          <span className="text-muted-foreground">
+            Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
+          </span>
+          {totalFact > 0 && (
+            <span className="text-muted-foreground">
+              Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span>
+            </span>
           )}
           <span className="text-muted-foreground">
             Меры <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? `Есть · ${measuresCount}` : 'Нет'}</span>
           </span>
         </div>
 
-        {/* Tags */}
         {(scenario.causeType || scenario.itService) && (
           <div className="flex items-center gap-2 flex-wrap">
             {scenario.causeType && (
@@ -165,33 +136,15 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 text-xs text-primary hover:underline pt-1"
+          className="text-xs text-primary hover:underline pt-1"
         >
-          {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          {campaignActive ? 'Показать действующие значения и детали' : 'Подробнее'}
+          {expanded ? 'Скрыть детали' : 'Подробнее'}
         </button>
       </div>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-0 space-y-4 border-t border-border/60">
-          {/* Current values reference (campaign mode) */}
-          {campaignActive && (
-            <div className="pt-3 rounded-lg bg-muted/40 border border-border/60 p-3 space-y-1.5">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">
-                Действует сейчас
-              </p>
-              <div className="flex items-center gap-x-5 gap-y-1 flex-wrap text-xs">
-                <span className="text-muted-foreground">Потенциал <span className="font-medium text-foreground/80">{fmtVal(potentialLosses)} ₽</span></span>
-                <span className="text-muted-foreground">Доля <span className="font-medium text-foreground/80">{scenario.percentage}%</span></span>
-                {totalFact > 0 && (
-                  <span className="text-muted-foreground">Факт <span className="font-medium text-foreground/80">{fmtVal(totalFact)} ₽</span></span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Fact / Forecast technical breakdown */}
-          <div className={cn("grid grid-cols-2 gap-4", !campaignActive && "pt-3")}>
+        <div className="px-4 pb-4 pt-3 space-y-4 border-t border-border/60">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
               <div className="space-y-1 text-sm">
@@ -218,12 +171,51 @@ function ScenarioDetailCard({ scenario, risk, fmtVal, campaignActive }: { scenar
   );
 }
 
+/** Compact return-with-comment popover trigger. */
+function ReturnPopover({ label, onSubmit, helper }: { label: string; onSubmit: (comment: string) => void; helper?: string }) {
+  const [open, setOpen] = useState(false);
+  const [comment, setComment] = useState('');
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+          <Undo2 className="w-3 h-3" />
+          {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 space-y-2" align="end">
+        <p className="text-xs font-medium">Комментарий для возврата</p>
+        {helper && <p className="text-[11px] text-muted-foreground leading-snug">{helper}</p>}
+        <Textarea
+          value={comment}
+          onChange={e => setComment(e.target.value)}
+          placeholder="Опишите, что нужно скорректировать…"
+          className="min-h-[80px] text-sm"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Отмена</Button>
+          <Button
+            size="sm"
+            disabled={!comment.trim()}
+            onClick={() => { onSubmit(comment.trim()); setComment(''); setOpen(false); }}
+          >
+            Вернуть
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: RiskDetailViewProps) {
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('info');
 
-  /** Compact format for monitoring: 1.2 млрд / 5.1 млн / 250 тыс / 42 */
+  // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
+  const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
+  const [selectedMirrorIds, setSelectedMirrorIds] = useState<Set<string>>(new Set());
+
   const fmtVal = (val: number) => {
     if (val >= 1_000_000_000) {
       const v = val / 1_000_000_000;
@@ -240,20 +232,62 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
     return val.toLocaleString('ru-RU');
   };
 
+  // Helper to read effective status (override > mock)
+  const readMirror = (m: Mirror) => {
+    const o = mirrorOverrides[m.id];
+    return {
+      status: (o?.status ?? m.approvalStatus) as MirrorApprovalStatus | undefined,
+      returnComment: o?.returnComment ?? m.returnComment,
+    };
+  };
+
+  // "My mirrors needing approval" — based on mock isMine + status Требует согласования
+  const myPendingMirrors = useMemo(() => {
+    if (!risk) return [];
+    return risk.mirrors.filter(m => {
+      const r = readMirror(m);
+      return m.isMine && r.status === 'Требует согласования';
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [risk, mirrorOverrides]);
+
+  const updateMirror = (id: string, patch: { status?: MirrorApprovalStatus; returnComment?: string }) => {
+    setMirrorOverrides(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+  };
+
+  const approveMirror = (id: string) => updateMirror(id, { status: 'Согласовано', returnComment: undefined });
+  const returnMirror = (id: string, comment: string) => updateMirror(id, { status: 'Возвращено', returnComment: comment });
+
+  const approveAllMyMirrors = () => {
+    myPendingMirrors.forEach(m => approveMirror(m.id));
+    setSelectedMirrorIds(new Set());
+  };
+
+  const returnSelectedMirrors = (comment: string) => {
+    selectedMirrorIds.forEach(id => returnMirror(id, comment));
+    setSelectedMirrorIds(new Set());
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedMirrorIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   if (!risk) return null;
 
-  // Campaign context — show project 2027 comparison when an active campaign exists
   const campaignActive = !!(risk.campaignStatus || risk.proposedLimits);
   const proposed = risk.proposedLimits;
 
-  // Mock project 2027 potential losses (fallback ~+8% over current value)
-  const potential2027 = {
-    clean: proposed?.cleanOpRisk ?? Math.round((risk.cleanOpRisk.value || 0) * 1.08 * 10) / 10,
-    credit: proposed?.creditOpRisk ?? Math.round((risk.creditOpRisk.value || 0) * 1.08 * 10) / 10,
-    indirect: proposed?.indirectLosses ?? Math.round((risk.indirectLosses.value || 0) * 1.08 * 10) / 10,
+  // Risk-level next-year limit fallback (from proposedLimits if provided)
+  const nextYearRisk = {
+    clean: proposed?.cleanOpRisk,
+    credit: proposed?.creditOpRisk,
+    indirect: proposed?.indirectLosses,
   };
 
-  // AI message based on risk level
   const aiMessage = risk.riskLevel === 'Высокий'
     ? 'Уровень риска высокий. Рекомендуется проработать мероприятия по снижению или пересмотреть стратегию реагирования.'
     : 'Показатели риска в пределах нормы. Продолжайте мониторинг в рамках текущей стратегии.';
@@ -292,7 +326,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         <div className="grid grid-cols-[1fr,320px] gap-8 px-2">
           {/* Main content */}
           <div className="space-y-6">
-            {/* RP comment when monitoring status is Корректировка */}
             {risk.monitoringStatus === 'Корректировка' && risk.rpComment && (
               <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/60">
                 <p className="text-sm font-semibold text-amber-900 mb-1">Комментарий риск-партнёра</p>
@@ -304,15 +337,12 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             )}
 
-            {/* Subtle campaign context line */}
             {campaignActive && (
               <p className="text-xs text-muted-foreground -mb-2">
-                Лимитная кампания открыта: проект 2027 показан рядом с действующими значениями.
+                Лимитная кампания открыта: следующий год показан рядом с действующими лимитами.
               </p>
             )}
 
-
-            {/* Risk evaluation */}
             <section className="space-y-2">
               <h2 className="text-base font-semibold">Оценка риска</h2>
               <div className="grid grid-cols-2 gap-3">
@@ -327,7 +357,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </section>
 
-            {/* AI Alert */}
             <div className="p-4 rounded-xl border" style={{
               backgroundColor: 'hsl(var(--ai-alert))',
               borderColor: 'hsl(var(--ai-alert-border))',
@@ -343,7 +372,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-1 text-sm font-medium bg-gradient-to-r from-[hsl(var(--ai-alert-foreground))/10] to-[hsl(var(--ai-alert-border))/20] hover:from-[hsl(var(--ai-alert-foreground))/20] hover:to-[hsl(var(--ai-alert-border))/30] border border-[hsl(var(--ai-alert-border))]"
+                      className="mt-1 text-sm font-medium border border-[hsl(var(--ai-alert-border))]"
                       style={{ color: 'hsl(var(--ai-alert-foreground))' }}
                       onClick={() => onOpenWizard?.(risk)}
                     >
@@ -354,8 +383,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </div>
 
-
-            {/* Nav chips */}
             <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
               {sections.map(s => (
                 <button
@@ -373,86 +400,47 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               <h2 className="text-base font-semibold">Утилизация лимитов</h2>
               <div className="grid grid-cols-3 gap-5">
                 {([
-                  { title: 'Чистые', limit: risk.cleanOpRisk, proposedLimit: proposed?.cleanOpRisk },
-                  { title: 'Кредитные', limit: risk.creditOpRisk, proposedLimit: proposed?.creditOpRisk },
-                  { title: 'Косвенные', limit: risk.indirectLosses, proposedLimit: proposed?.indirectLosses },
-                ] as const).map((item) => {
-                  const currentLimit = item.limit.limit ?? 0;
-                  const delta = currentLimit > 0 && item.proposedLimit != null
-                    ? Math.round(((item.proposedLimit - currentLimit) / currentLimit) * 100)
-                    : null;
-                  return (
-                    <div key={item.title} className="space-y-1.5">
-                      <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
-                      {campaignActive && (
-                        <div className="px-1 text-[11px] text-muted-foreground flex items-center gap-1.5">
-                          <span className="text-primary/70 font-medium">Проект 2027:</span>
-                          {item.proposedLimit != null ? (
-                            <>
-                              <span>лимит <span className="font-medium text-foreground">{item.proposedLimit} млн ₽</span></span>
-                              {delta != null && delta !== 0 && (
-                                <span className={cn("font-medium", delta > 0 ? "text-destructive" : "text-primary")}>
-                                  {delta > 0 ? '+' : ''}{delta}%
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="italic">без изменений</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                  { title: 'Чистые', limit: risk.cleanOpRisk, nextYear: nextYearRisk.clean },
+                  { title: 'Кредитные', limit: risk.creditOpRisk, nextYear: nextYearRisk.credit },
+                  { title: 'Косвенные', limit: risk.indirectLosses, nextYear: nextYearRisk.indirect },
+                ] as const).map((item) => (
+                  <div key={item.title} className="space-y-1.5">
+                    <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
+                    {campaignActive && item.nextYear != null && (
+                      <div className="px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/15 flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                        <span className="text-xs font-semibold text-foreground">{item.nextYear} млн ₽</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Potential Losses */}
+            {/* Potential Losses — current only */}
             <section id="potential" className="space-y-3">
               <h2 className="text-base font-semibold">Потенциальные потери</h2>
               <div className="grid grid-cols-3 gap-4">
                 {([
-                  { label: 'Чистые', value: risk.cleanOpRisk.value, value2027: potential2027.clean },
-                  { label: 'Кредитные', value: risk.creditOpRisk.value, value2027: potential2027.credit },
-                  { label: 'Косвенные', value: risk.indirectLosses.value, value2027: potential2027.indirect },
-                ] as const).map((item) => {
-                  const delta = item.value > 0
-                    ? Math.round(((item.value2027 - item.value) / item.value) * 100)
-                    : 0;
-                  return (
-                    <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-card space-y-1.5">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
-                      {campaignActive ? (
-                        <>
-                          <div className="flex items-baseline gap-2">
-                            <p className="text-lg font-semibold leading-tight">{fmtVal(item.value2027)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                            {delta !== 0 && (
-                              <span className={cn("text-[11px] font-medium inline-flex items-center gap-0.5", delta > 0 ? "text-destructive" : "text-primary")}>
-                                {delta > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                {delta > 0 ? '+' : ''}{delta}%
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground/80">
-                            Сейчас: <span className="font-medium text-foreground/70">{fmtVal(item.value)} ₽</span>
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                      )}
-                    </div>
-                  );
-                })}
+                  { label: 'Чистые', value: risk.cleanOpRisk.value },
+                  { label: 'Кредитные', value: risk.creditOpRisk.value },
+                  { label: 'Косвенные', value: risk.indirectLosses.value },
+                ] as const).map((item) => (
+                  <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-card space-y-1.5">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
+                    <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Scenarios */}
+            {/* Scenarios — current only */}
             <section id="scenarios" className="space-y-3">
               <h2 className="text-base font-semibold">Сценарии реализации риска</h2>
               {risk.scenarios.length > 0 ? (
                 <div className="space-y-3">
                   {risk.scenarios.map((scenario) => (
-                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} campaignActive={campaignActive} />
+                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} />
                   ))}
                 </div>
               ) : (
@@ -463,81 +451,139 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             {/* Mirroring */}
             {risk.mirrors.length > 0 && (
               <section id="mirroring" className="space-y-3">
-                <h2 className="text-base font-semibold">Зеркалирование</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Зеркалирование</h2>
+                </div>
+
+                {/* Group action for "my mirrors" awaiting approval */}
+                {campaignActive && myPendingMirrors.length > 1 && (
+                  <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="text-sm">
+                      <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
+                      {selectedMirrorIds.size > 0 && (
+                        <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
+                        <Check className="w-3.5 h-3.5" />
+                        Согласовать все мои зеркала
+                      </Button>
+                      <ReturnPopover
+                        label="Вернуть выбранные"
+                        helper="Комментарий будет применён ко всем выбранным зеркалам."
+                        onSubmit={returnSelectedMirrors}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  {risk.mirrors.map((mirror, idx) => {
-                    const mClean = Math.round((risk.cleanOpRisk.value || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mCleanLimit = Math.round((risk.cleanOpRisk.limit || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mCleanPct = mCleanLimit > 0 ? Math.round(mClean / mCleanLimit * 100) : 0;
+                  {risk.mirrors.map((mirror) => {
+                    const r = readMirror(mirror);
+                    const status = r.status;
+                    const isMine = !!mirror.isMine;
+                    const requiresMyApproval = isMine && status === 'Требует согласования';
 
-                    const mCredit = Math.round((risk.creditOpRisk.value || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mCreditLimit = Math.round((risk.creditOpRisk.limit || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mCreditPct = mCreditLimit > 0 ? Math.round(mCredit / mCreditLimit * 100) : 0;
+                    // current per-loss-type values
+                    const calc = (val: number, lim: number) => {
+                      const v = Math.round(val * mirror.percentage / 100 * 10) / 10;
+                      const l = Math.round(lim * mirror.percentage / 100 * 10) / 10;
+                      const pct = l > 0 ? Math.round(v / l * 100) : 0;
+                      return { v, l, pct };
+                    };
+                    const cClean = calc(risk.cleanOpRisk.value || 0, risk.cleanOpRisk.limit || 0);
+                    const cCredit = calc(risk.creditOpRisk.value || 0, risk.creditOpRisk.limit || 0);
+                    const cIndirect = calc(risk.indirectLosses.value || 0, risk.indirectLosses.limit || 0);
 
-                    const mIndirect = Math.round((risk.indirectLosses.value || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mIndirectLimit = Math.round((risk.indirectLosses.limit || 0) * mirror.percentage / 100 * 10) / 10;
-                    const mIndirectPct = mIndirectLimit > 0 ? Math.round(mIndirect / mIndirectLimit * 100) : 0;
+                    const ny = mirror.nextYearLimits;
 
-                    // Mock project 2027 mirror values: scale current limit proportionally to overall proposed
-                    const m2027Clean = proposed?.cleanOpRisk != null
-                      ? Math.round(proposed.cleanOpRisk * mirror.percentage / 100 * 10) / 10
-                      : null;
-                    const m2027Credit = proposed?.creditOpRisk != null
-                      ? Math.round(proposed.creditOpRisk * mirror.percentage / 100 * 10) / 10
-                      : null;
-                    const m2027Indirect = proposed?.indirectLosses != null
-                      ? Math.round(proposed.indirectLosses * mirror.percentage / 100 * 10) / 10
-                      : null;
-
-                    const hasProjectMirror = campaignActive && (m2027Clean != null || m2027Credit != null || m2027Indirect != null);
-
-                    // Mock project status tag per mirror
-                    const projectStatuses = ['На согласовании', 'Проект согласован', 'Возвращено'] as const;
-                    const projectStatus = projectStatuses[idx % projectStatuses.length];
-                    const statusClass =
-                      projectStatus === 'Проект согласован' ? 'text-primary border-primary/40 bg-primary/8' :
-                      projectStatus === 'Возвращено' ? 'text-destructive border-destructive/30 bg-destructive/8' :
-                      'text-orange-500 border-orange-300 bg-orange-50/60';
+                    const rows = [
+                      { label: 'Чистые', cur: cClean, ny: ny?.cleanOp },
+                      { label: 'В кредитовании', cur: cCredit, ny: ny?.creditOp },
+                      { label: 'Косвенные', cur: cIndirect, ny: ny?.indirect },
+                    ];
 
                     return (
                       <div key={mirror.id} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium">{mirror.subdivision}</p>
-                          {hasProjectMirror && (
-                            <span className={cn("text-[11px] px-2 py-0.5 rounded-md font-medium border", statusClass)}>
-                              {projectStatus}
-                            </span>
-                          )}
-                        </div>
-                        {hasProjectMirror ? (
-                          <>
-                            <div className="space-y-1">
-                              <p className="text-[11px] uppercase tracking-wide font-medium text-primary/80">Проект 2027</p>
-                              <div className="space-y-0.5 text-sm">
-                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-semibold">{m2027Clean ?? mCleanLimit} млн ₽</span></div>
-                                <div className="flex items-center justify-between"><span className="text-muted-foreground">В кредитовании</span><span className="font-semibold">{m2027Credit ?? mCreditLimit} млн ₽</span></div>
-                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-semibold">{m2027Indirect ?? mIndirectLimit} млн ₽</span></div>
-                              </div>
-                            </div>
-                            <MirrorCurrentCollapse
-                              items={[
-                                { label: 'Чистые', value: `${mCleanLimit} млн ₽` },
-                                { label: 'В кредитовании', value: `${mCreditLimit} млн ₽` },
-                                { label: 'Косвенные', value: `${mIndirectLimit} млн ₽` },
-                              ]}
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-5 text-sm flex-wrap">
-                              <span className="text-muted-foreground">Чистые: <span className="font-medium text-foreground">{mClean} млн</span> <span className={cn("text-xs font-medium", mCleanPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCleanPct}%</span></span>
-                              <span className="text-muted-foreground">Кредитные: <span className="font-medium text-foreground">{mCredit} млн</span> <span className={cn("text-xs font-medium", mCreditPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mCreditPct}%</span></span>
-                              <span className="text-muted-foreground">Косвенные: <span className="font-medium text-foreground">{mIndirect} млн</span> <span className={cn("text-xs font-medium", mIndirectPct > 100 ? "text-destructive" : "text-muted-foreground")}>{mIndirectPct}%</span></span>
-                            </div>
-                            {campaignActive && (
-                              <p className="text-[11px] text-muted-foreground italic">Без изменений в проекте 2027</p>
+                        {/* Header: subdivision + status + select */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 min-w-0">
+                            {requiresMyApproval && (
+                              <Checkbox
+                                checked={selectedMirrorIds.has(mirror.id)}
+                                onCheckedChange={() => toggleSelect(mirror.id)}
+                                className="mt-1"
+                              />
                             )}
-                          </>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
+                              {status === 'Ожидает другого согласующего' && mirror.approver && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  Ожидает согласования: {mirror.approver}
+                                </p>
+                              )}
+                              {status === 'Согласовано' && mirror.approver && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  Согласовал: {mirror.approver}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {status && <MirrorStatusTag status={status} />}
+                        </div>
+
+                        {/* Per loss-type rows */}
+                        <div className="space-y-2">
+                          {rows.map(row => (
+                            <div key={row.label} className="rounded-lg border border-border/50 overflow-hidden">
+                              <div className="px-3 py-2 flex items-center justify-between gap-3">
+                                <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
+                                <div className="flex items-center gap-4 flex-1 justify-end">
+                                  <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
+                                  <span className={cn(
+                                    "text-xs font-semibold w-10 text-right",
+                                    row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
+                                  )}>
+                                    {row.cur.pct}%
+                                  </span>
+                                  <span className="text-[11px] text-muted-foreground w-28 text-right">
+                                    лимит {row.cur.l} млн ₽
+                                  </span>
+                                </div>
+                              </div>
+                              {campaignActive && row.ny != null && (
+                                <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
+                                  <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                                  <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Returned comment */}
+                        {status === 'Возвращено' && r.returnComment && (
+                          <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/[0.04]">
+                            <p className="text-[11px] uppercase tracking-wide font-medium text-destructive/80 mb-1">
+                              Комментарий согласующего
+                            </p>
+                            <p className="text-xs text-foreground/90">{r.returnComment}</p>
+                          </div>
+                        )}
+
+                        {/* Local actions only when this mirror needs my approval */}
+                        {requiresMyApproval && (
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <ReturnPopover
+                              label="Вернуть"
+                              onSubmit={(c) => returnMirror(mirror.id, c)}
+                            />
+                            <Button size="sm" className="gap-1.5 h-7 text-xs" onClick={() => approveMirror(mirror.id)}>
+                              <Check className="w-3 h-3" />
+                              Согласовать
+                            </Button>
+                          </div>
                         )}
                       </div>
                     );
@@ -549,7 +595,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             {/* Connections */}
             <section id="connections" className="space-y-4">
               <h2 className="text-base font-semibold">Связи</h2>
-              
+
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">Меры</h3>
                 {mockMeasures.map((measure) => (
@@ -582,7 +628,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Segmented control */}
             <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
               <button
                 onClick={() => setSidebarTab('info')}
@@ -606,7 +651,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
 
             {sidebarTab === 'info' ? (
               <div className="space-y-4">
-                {/* Meta */}
                 <div className="p-4 rounded-xl border border-border bg-card space-y-3">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
@@ -638,10 +682,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                   </div>
                   {risk.responseStrategy && (
                     <div className="pt-2 border-t border-border">
-                      <span className={cn(
-                        "text-xs px-2.5 py-0.5 rounded-md font-medium border",
-                        "bg-primary/8 text-primary/80 border-primary/20"
-                      )}>
+                      <span className="text-xs px-2.5 py-0.5 rounded-md font-medium border bg-primary/8 text-primary/80 border-primary/20">
                         {risk.responseStrategy}
                       </span>
                     </div>
@@ -683,14 +724,28 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               Добавить меру
             </Button>
 
-            {/* Workflow actions */}
+            {/* Mirror approval block — separate from general risk approval */}
+            {campaignActive && myPendingMirrors.length > 0 && (
+              <div className="p-3 rounded-xl border border-primary/20 bg-primary/[0.04] space-y-2">
+                <p className="text-xs font-semibold text-foreground">Зеркалирование</p>
+                <p className="text-xs text-muted-foreground">
+                  {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'требует' : 'требуют'} вашего согласования
+                </p>
+                <Button size="sm" className="w-full gap-1.5" onClick={approveAllMyMirrors}>
+                  <Check className="w-3.5 h-3.5" />
+                  Согласовать все мои зеркала
+                </Button>
+              </div>
+            )}
+
+            {/* General risk workflow actions */}
             <div className="sticky top-4 space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Действия</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Действия по риску</p>
               <Button variant="default" className="w-full" size="sm">
-                Согласовать
+                Согласовать риск
               </Button>
               <Button variant="outline" className="w-full" size="sm">
-                Вернуть на доработку
+                Вернуть риск на доработку
               </Button>
               <Button variant="secondary" className="w-full gap-2" size="sm">
                 <XCircle className="w-3.5 h-3.5" />
