@@ -30,8 +30,8 @@ export const mockRisks: Risk[] = [
       }
     ],
     mirrors: [
-      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4 },
-      { id: '2', subdivision: 'Блок ТБ / Дивизион КК', percentage: 20, fact: 1, factPercentage: 0 }
+      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4, approvalStatus: 'Требует согласования', approver: 'Садыков И.И.', isMine: true, nextYearLimits: { cleanOp: 10, creditOp: 9, indirect: 8 } },
+      { id: '2', subdivision: 'Блок ТБ / Дивизион КК', percentage: 20, fact: 1, factPercentage: 0, approvalStatus: 'Ожидает другого согласующего', approver: 'Иванов И.И.', nextYearLimits: { cleanOp: 7, creditOp: 5, indirect: 4 } }
     ],
     author: 'Иванов Ива Иванович',
     createdAt: '15.01.2026',
