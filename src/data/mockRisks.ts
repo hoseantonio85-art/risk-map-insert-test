@@ -146,8 +146,9 @@ export const mockRisks: Risk[] = [
       }
     ],
     mirrors: [
-      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4 },
-      { id: '2', subdivision: 'Блок ТБ / Дивизион КК', percentage: 20, fact: 1, factPercentage: 0 }
+      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4, approvalStatus: 'Требует согласования', approver: 'Садыков И.И.', isMine: true, nextYearLimits: { cleanOp: 60, creditOp: 20, indirect: 10 }, returnComment: undefined },
+      { id: '2', subdivision: 'Блок ТБ / Дивизион КК', percentage: 20, fact: 1, factPercentage: 0, approvalStatus: 'Возвращено', approver: 'Сидоров С.С.', returnComment: 'Превышение по чистым потерям не обосновано. Уточните прогноз и приложите расчёт.', nextYearLimits: { cleanOp: 40, creditOp: 12, indirect: 6 } },
+      { id: '3', subdivision: 'Блок Розница / Дивизион ПЛ', percentage: 15, fact: 0.5, factPercentage: 2, approvalStatus: 'Согласовано', approver: 'Кузнецова К.К.', nextYearLimits: { cleanOp: 30, creditOp: 10, indirect: 5 } }
     ],
     author: 'Иванов Ива Иванович',
     createdAt: '15.01.2026',
