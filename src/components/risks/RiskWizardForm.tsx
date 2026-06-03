@@ -360,47 +360,85 @@ function CollapsibleScenario({
 
       {isOpen && (
         <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
-          <Textarea
-            value={scenario.description}
-            onChange={e => onUpdate('description', e.target.value)}
-            placeholder="Опишите сценарий реализации риска..."
-            className="min-h-[80px]"
-          />
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              Название сценария<span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              value={scenario.description}
+              onChange={e => onUpdate('description', e.target.value)}
+              placeholder="Опишите сценарий реализации риска..."
+              className="min-h-[80px]"
+            />
+          </div>
 
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Чистые</Label>
-              <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Тип причины<span className="text-destructive">*</span>
+              </Label>
+              <Select value={scenario.causeType || ''} onValueChange={v => onUpdate('causeType', v)}>
+                <SelectTrigger className="h-9 bg-background"><SelectValue placeholder="Выберите тип" /></SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {causeTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">В кредитовании</Label>
-              <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Косвенные</Label>
-              <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-              <FormattedInput
-                value={scenario.probability}
-                onChange={v => onUpdate('probability', v)}
-                placeholder="0"
-                min={0}
-                max={100}
-                showCurrency={false}
-              />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                ИТ-услуга{itServiceRequiredFor(scenario.causeType) && <span className="text-destructive">*</span>}
+              </Label>
+              <Select
+                value={scenario.itService || ''}
+                onValueChange={v => onUpdate('itService', v)}
+                disabled={!itServiceRequiredFor(scenario.causeType)}
+              >
+                <SelectTrigger className="h-9 bg-background">
+                  <SelectValue placeholder={itServiceRequiredFor(scenario.causeType) ? 'Выберите услугу' : 'Не требуется'} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {itServices.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <ExtraParamsBlock
-            causeType={scenario.causeType}
-            itService={scenario.itService}
-            onCauseTypeChange={(v) => onUpdate('causeType', v)}
-            onItServiceChange={(v) => onUpdate('itService', v)}
+          <RiskTypeMultiSelect
+            value={scenario.riskTypes || []}
+            onChange={v => onUpdate('riskTypes', v as unknown as string)}
           />
+
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Потенциальные потери по сценарию</p>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Чистые</Label>
+                <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+                <FormattedInput
+                  value={scenario.probability}
+                  onChange={v => onUpdate('probability', v)}
+                  placeholder="0"
+                  min={0}
+                  max={100}
+                  showCurrency={false}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
     </div>
   );
 }
