@@ -80,73 +80,76 @@ const sections = [
 
 import type { Scenario } from '@/types/risk';
 
-/** Scenario detail card — pure current risk assessment view, no next-year/project logic. */
-function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string }) {
-  const [expanded, setExpanded] = useState(false);
-
+/** Compact scenario row — opens a side drawer with full details. */
+function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void }) {
   const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const totalFact = factClean + factCredit + factIndirect;
+  const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
+  const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
 
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full text-left rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
+    >
+      <p className="text-sm text-foreground">{scenario.description}</p>
+      <div className="flex items-center gap-4 text-xs flex-wrap text-muted-foreground">
+        <span>Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
+        <span>Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
+        {totalFact > 0 && <span>Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>}
+        <span className={cn("font-medium", hasMeasures ? "text-primary" : "")}>{hasMeasures ? 'Меры: есть' : 'Меры: нет'}</span>
+      </div>
+    </button>
+  );
+}
+
+/** Drawer with full scenario details. */
+function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void }) {
+  if (!scenario || !risk) return null;
+  const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const forecastClean = Math.round(factClean * 1.2 * 10) / 10;
   const forecastCredit = Math.round(factCredit * 1.15 * 10) / 10;
   const forecastIndirect = Math.round(factIndirect * 1.1 * 10) / 10;
-
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
 
-  const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
-  const measuresCount = hasMeasures ? 2 : 0;
-  const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
-
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      <div className="p-4 space-y-2">
-        <p className="text-sm text-foreground">{scenario.description}</p>
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle className="text-base leading-snug pr-6">{scenario.description}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex items-center gap-4 text-sm flex-wrap">
-          <span className="text-muted-foreground">
-            Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
-          </span>
-          <span className="text-muted-foreground">
-            Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
-          </span>
-          {totalFact > 0 && (
-            <span className="text-muted-foreground">
-              Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span>
-            </span>
-          )}
-          <span className="text-muted-foreground">
-            Меры <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? `Есть · ${measuresCount}` : 'Нет'}</span>
-          </span>
-        </div>
-
-        {(scenario.causeType || scenario.itService) && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {scenario.causeType && (
-              <span title={scenario.causeType} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
-                {truncate(scenario.causeType, 35)}
-              </span>
-            )}
-            {scenario.itService && (
-              <span title={scenario.itService} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
-                {truncate(scenario.itService, 35)}
-              </span>
-            )}
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Потенциальные</p>
+              <p className="text-sm font-semibold mt-1">{fmtVal(potentialLosses)} ₽</p>
+            </div>
+            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Доля</p>
+              <p className="text-sm font-semibold mt-1">{scenario.percentage}%</p>
+            </div>
           </div>
-        )}
 
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-primary hover:underline pt-1"
-        >
-          {expanded ? 'Скрыть детали' : 'Подробнее'}
-        </button>
-      </div>
+          {(scenario.causeType || scenario.itService) && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Параметры</p>
+              <div className="space-y-1 text-sm">
+                {scenario.causeType && (
+                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">Тип причины</span><span className="text-right">{scenario.causeType}</span></div>
+                )}
+                {scenario.itService && (
+                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">ИТ-услуга</span><span className="text-right">{scenario.itService}</span></div>
+                )}
+              </div>
+            </div>
+          )}
 
-      {expanded && (
-        <div className="px-4 pb-4 pt-3 space-y-4 border-t border-border/60">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
@@ -165,48 +168,73 @@ function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; ri
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
+
+          <div className="text-xs text-muted-foreground pt-2 border-t border-border">
             Источник: <span className="text-foreground">Ручное создание</span>
           </div>
         </div>
-      )}
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
-/** Compact return-with-comment popover trigger. */
-function ReturnPopover({ label, onSubmit, helper }: { label: string; onSubmit: (comment: string) => void; helper?: string }) {
-  const [open, setOpen] = useState(false);
+/** Modal to return one or many mirrors with a comment. */
+function ReturnMirrorsDialog({ isOpen, onClose, onSubmit, count }: { isOpen: boolean; onClose: () => void; onSubmit: (comment: string) => void; count: number }) {
   const [comment, setComment] = useState('');
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
-          <Undo2 className="w-3 h-3" />
-          {label}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 space-y-2" align="end">
-        <p className="text-xs font-medium">Комментарий для возврата</p>
-        {helper && <p className="text-[11px] text-muted-foreground leading-snug">{helper}</p>}
+    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setComment(''); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Вернуть на доработку</DialogTitle>
+          <DialogDescription>
+            {count > 1
+              ? `Комментарий будет применён ко всем выбранным зеркалам (${count}).`
+              : 'Опишите, что нужно скорректировать.'}
+          </DialogDescription>
+        </DialogHeader>
         <Textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Опишите, что нужно скорректировать…"
-          className="min-h-[80px] text-sm"
+          placeholder="Комментарий для исполнителя…"
+          className="min-h-[120px]"
+          autoFocus
         />
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Отмена</Button>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => { setComment(''); onClose(); }}>Отмена</Button>
           <Button
-            size="sm"
             disabled={!comment.trim()}
-            onClick={() => { onSubmit(comment.trim()); setComment(''); setOpen(false); }}
+            onClick={() => { onSubmit(comment.trim()); setComment(''); onClose(); }}
           >
             Вернуть
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Modal to read a returned-mirror comment. */
+function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: { isOpen: boolean; onClose: () => void; comment?: string; author?: string; date?: string; subdivision?: string }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Комментарий согласующего</DialogTitle>
+          {subdivision && <DialogDescription>{subdivision}</DialogDescription>}
+        </DialogHeader>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
+          <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
         </div>
-      </PopoverContent>
-    </Popover>
+        {(author || date) && (
+          <p className="text-xs text-muted-foreground">
+            {author}{author && date ? ' · ' : ''}{date}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Закрыть</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
