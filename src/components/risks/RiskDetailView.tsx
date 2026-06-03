@@ -474,7 +474,13 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               {risk.scenarios.length > 0 ? (
                 <div className="space-y-3">
                   {risk.scenarios.map((scenario) => (
-                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} />
+                    <ScenarioRow
+                      key={scenario.id}
+                      scenario={scenario}
+                      risk={risk}
+                      fmtVal={fmtVal}
+                      onOpen={() => setScenarioDrawerId(scenario.id)}
+                    />
                   ))}
                 </div>
               ) : (
