@@ -1,11 +1,14 @@
 import { useState, useMemo } from 'react';
-import { History, Plus, FileText, Sparkles, Pencil, XCircle, ArrowRight, Check, Undo2 } from 'lucide-react';
+import { History, Plus, FileText, Sparkles, Pencil, XCircle, ArrowRight, Check, Undo2, MessageSquareWarning } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { FullscreenLightbox } from '@/components/ui/fullscreen-lightbox';
 import { UtilizationDrawer } from './UtilizationDrawer';
 import { HistoryDrawer } from './HistoryDrawer';
@@ -77,73 +80,76 @@ const sections = [
 
 import type { Scenario } from '@/types/risk';
 
-/** Scenario detail card — pure current risk assessment view, no next-year/project logic. */
-function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string }) {
-  const [expanded, setExpanded] = useState(false);
-
+/** Compact scenario row — opens a side drawer with full details. */
+function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void }) {
   const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const totalFact = factClean + factCredit + factIndirect;
+  const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
+  const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
 
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full text-left rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
+    >
+      <p className="text-sm text-foreground">{scenario.description}</p>
+      <div className="flex items-center gap-4 text-xs flex-wrap text-muted-foreground">
+        <span>Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
+        <span>Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
+        {totalFact > 0 && <span>Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>}
+        <span className={cn("font-medium", hasMeasures ? "text-primary" : "")}>{hasMeasures ? 'Меры: есть' : 'Меры: нет'}</span>
+      </div>
+    </button>
+  );
+}
+
+/** Drawer with full scenario details. */
+function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void }) {
+  if (!scenario || !risk) return null;
+  const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const forecastClean = Math.round(factClean * 1.2 * 10) / 10;
   const forecastCredit = Math.round(factCredit * 1.15 * 10) / 10;
   const forecastIndirect = Math.round(factIndirect * 1.1 * 10) / 10;
-
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
 
-  const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
-  const measuresCount = hasMeasures ? 2 : 0;
-  const truncate = (text: string, max: number) => text.length > max ? text.slice(0, max) + '…' : text;
-
   return (
-    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
-      <div className="p-4 space-y-2">
-        <p className="text-sm text-foreground">{scenario.description}</p>
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle className="text-base leading-snug pr-6">{scenario.description}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex items-center gap-4 text-sm flex-wrap">
-          <span className="text-muted-foreground">
-            Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span>
-          </span>
-          <span className="text-muted-foreground">
-            Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span>
-          </span>
-          {totalFact > 0 && (
-            <span className="text-muted-foreground">
-              Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span>
-            </span>
-          )}
-          <span className="text-muted-foreground">
-            Меры <span className={cn("font-medium", hasMeasures ? "text-primary" : "text-muted-foreground")}>{hasMeasures ? `Есть · ${measuresCount}` : 'Нет'}</span>
-          </span>
-        </div>
-
-        {(scenario.causeType || scenario.itService) && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {scenario.causeType && (
-              <span title={scenario.causeType} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
-                {truncate(scenario.causeType, 35)}
-              </span>
-            )}
-            {scenario.itService && (
-              <span title={scenario.itService} className="text-[11px] px-2 py-0.5 rounded-md border border-border bg-muted/50 text-muted-foreground max-w-[200px] truncate inline-block">
-                {truncate(scenario.itService, 35)}
-              </span>
-            )}
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Потенциальные</p>
+              <p className="text-sm font-semibold mt-1">{fmtVal(potentialLosses)} ₽</p>
+            </div>
+            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Доля</p>
+              <p className="text-sm font-semibold mt-1">{scenario.percentage}%</p>
+            </div>
           </div>
-        )}
 
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-primary hover:underline pt-1"
-        >
-          {expanded ? 'Скрыть детали' : 'Подробнее'}
-        </button>
-      </div>
+          {(scenario.causeType || scenario.itService) && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Параметры</p>
+              <div className="space-y-1 text-sm">
+                {scenario.causeType && (
+                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">Тип причины</span><span className="text-right">{scenario.causeType}</span></div>
+                )}
+                {scenario.itService && (
+                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">ИТ-услуга</span><span className="text-right">{scenario.itService}</span></div>
+                )}
+              </div>
+            </div>
+          )}
 
-      {expanded && (
-        <div className="px-4 pb-4 pt-3 space-y-4 border-t border-border/60">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
@@ -162,48 +168,73 @@ function ScenarioDetailCard({ scenario, risk, fmtVal }: { scenario: Scenario; ri
               </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
+
+          <div className="text-xs text-muted-foreground pt-2 border-t border-border">
             Источник: <span className="text-foreground">Ручное создание</span>
           </div>
         </div>
-      )}
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
-/** Compact return-with-comment popover trigger. */
-function ReturnPopover({ label, onSubmit, helper }: { label: string; onSubmit: (comment: string) => void; helper?: string }) {
-  const [open, setOpen] = useState(false);
+/** Modal to return one or many mirrors with a comment. */
+function ReturnMirrorsDialog({ isOpen, onClose, onSubmit, count }: { isOpen: boolean; onClose: () => void; onSubmit: (comment: string) => void; count: number }) {
   const [comment, setComment] = useState('');
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
-          <Undo2 className="w-3 h-3" />
-          {label}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 space-y-2" align="end">
-        <p className="text-xs font-medium">Комментарий для возврата</p>
-        {helper && <p className="text-[11px] text-muted-foreground leading-snug">{helper}</p>}
+    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setComment(''); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Вернуть на доработку</DialogTitle>
+          <DialogDescription>
+            {count > 1
+              ? `Комментарий будет применён ко всем выбранным зеркалам (${count}).`
+              : 'Опишите, что нужно скорректировать.'}
+          </DialogDescription>
+        </DialogHeader>
         <Textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Опишите, что нужно скорректировать…"
-          className="min-h-[80px] text-sm"
+          placeholder="Комментарий для исполнителя…"
+          className="min-h-[120px]"
+          autoFocus
         />
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Отмена</Button>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => { setComment(''); onClose(); }}>Отмена</Button>
           <Button
-            size="sm"
             disabled={!comment.trim()}
-            onClick={() => { onSubmit(comment.trim()); setComment(''); setOpen(false); }}
+            onClick={() => { onSubmit(comment.trim()); setComment(''); onClose(); }}
           >
             Вернуть
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Modal to read a returned-mirror comment. */
+function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: { isOpen: boolean; onClose: () => void; comment?: string; author?: string; date?: string; subdivision?: string }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Комментарий согласующего</DialogTitle>
+          {subdivision && <DialogDescription>{subdivision}</DialogDescription>}
+        </DialogHeader>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
+          <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
         </div>
-      </PopoverContent>
-    </Popover>
+        {(author || date) && (
+          <p className="text-xs text-muted-foreground">
+            {author}{author && date ? ' · ' : ''}{date}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Закрыть</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -211,6 +242,9 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
+  const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
+  const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
@@ -383,248 +417,254 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </div>
 
-            <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
-              {sections.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border hover:border-primary/40 hover:text-primary transition-colors text-muted-foreground"
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
 
-            {/* Utilization */}
-            <section id="utilization" className="space-y-3">
-              <h2 className="text-base font-semibold">Утилизация лимитов</h2>
-              <div className="grid grid-cols-3 gap-5">
-                {([
-                  { title: 'Чистые', limit: risk.cleanOpRisk, nextYear: nextYearRisk.clean },
-                  { title: 'Кредитные', limit: risk.creditOpRisk, nextYear: nextYearRisk.credit },
-                  { title: 'Косвенные', limit: risk.indirectLosses, nextYear: nextYearRisk.indirect },
-                ] as const).map((item) => (
-                  <div key={item.title} className="space-y-1.5">
-                    <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
-                    {campaignActive && item.nextYear != null && (
-                      <div className="px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/15 flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                        <span className="text-xs font-semibold text-foreground">{item.nextYear} млн ₽</span>
+
+
+            <Accordion type="multiple" defaultValue={['utilization', 'potential', 'scenarios', 'mirroring', 'connections']} className="space-y-3">
+              {/* Utilization */}
+              <AccordionItem value="utilization" id="utilization" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Утилизация лимитов</AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid grid-cols-3 gap-5">
+                    {([
+                      { title: 'Чистые', limit: risk.cleanOpRisk, nextYear: nextYearRisk.clean },
+                      { title: 'Кредитные', limit: risk.creditOpRisk, nextYear: nextYearRisk.credit },
+                      { title: 'Косвенные', limit: risk.indirectLosses, nextYear: nextYearRisk.indirect },
+                    ] as const).map((item) => (
+                      <div key={item.title} className="space-y-1.5">
+                        <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
+                        {campaignActive && item.nextYear != null && (
+                          <div className="px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/15 flex items-center justify-between">
+                            <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                            <span className="text-xs font-semibold text-foreground">{item.nextYear} млн ₽</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Potential Losses */}
+              <AccordionItem value="potential" id="potential" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Потенциальные потери</AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {([
+                      { label: 'Чистые', value: risk.cleanOpRisk.value },
+                      { label: 'Кредитные', value: risk.creditOpRisk.value },
+                      { label: 'Косвенные', value: risk.indirectLosses.value },
+                    ] as const).map((item) => (
+                      <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-muted/30 space-y-1.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
+                        <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Scenarios */}
+              <AccordionItem value="scenarios" id="scenarios" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">
+                  <span className="flex items-center gap-2">
+                    Сценарии реализации риска
+                    <span className="text-xs font-normal text-muted-foreground">· {risk.scenarios.length}</span>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  {risk.scenarios.length > 0 ? (
+                    <div className="space-y-3">
+                      {risk.scenarios.map((scenario) => (
+                        <ScenarioRow
+                          key={scenario.id}
+                          scenario={scenario}
+                          risk={risk}
+                          fmtVal={fmtVal}
+                          onOpen={() => setScenarioDrawerId(scenario.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Сценарии не добавлены</p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Mirroring */}
+              {risk.mirrors.length > 0 && (
+                <AccordionItem value="mirroring" id="mirroring" className="border border-border/60 rounded-xl bg-card px-4">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">
+                    <span className="flex items-center gap-2">
+                      Зеркалирование
+                      <span className="text-xs font-normal text-muted-foreground">· {risk.mirrors.length}</span>
+                      {campaignActive && myPendingMirrors.length > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 font-medium">
+                          {myPendingMirrors.length} на согласовании
+                        </span>
+                      )}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 space-y-3">
+                    {/* Group action for "my mirrors" awaiting approval */}
+                    {campaignActive && myPendingMirrors.length > 1 && (
+                      <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
+                        <div className="text-sm">
+                          <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
+                          {selectedMirrorIds.size > 0 && (
+                            <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
+                            <Check className="w-3.5 h-3.5" />
+                            Согласовать все мои зеркала
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-8 text-xs"
+                            disabled={selectedMirrorIds.size === 0}
+                            onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                            Вернуть выбранные
+                          </Button>
+                        </div>
                       </div>
                     )}
-                  </div>
-                ))}
-              </div>
-            </section>
 
-            {/* Potential Losses — current only */}
-            <section id="potential" className="space-y-3">
-              <h2 className="text-base font-semibold">Потенциальные потери</h2>
-              <div className="grid grid-cols-3 gap-4">
-                {([
-                  { label: 'Чистые', value: risk.cleanOpRisk.value },
-                  { label: 'Кредитные', value: risk.creditOpRisk.value },
-                  { label: 'Косвенные', value: risk.indirectLosses.value },
-                ] as const).map((item) => (
-                  <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-card space-y-1.5">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
-                    <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                ))}
-              </div>
-            </section>
+                    <div className="space-y-3">
+                      {risk.mirrors.map((mirror) => {
+                        const r = readMirror(mirror);
+                        const status = r.status;
+                        const isMine = !!mirror.isMine;
+                        const requiresMyApproval = isMine && status === 'Требует согласования';
 
-            {/* Scenarios — current only */}
-            <section id="scenarios" className="space-y-3">
-              <h2 className="text-base font-semibold">Сценарии реализации риска</h2>
-              {risk.scenarios.length > 0 ? (
-                <div className="space-y-3">
-                  {risk.scenarios.map((scenario) => (
-                    <ScenarioDetailCard key={scenario.id} scenario={scenario} risk={risk} fmtVal={fmtVal} />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">Сценарии не добавлены</p>
-              )}
-            </section>
+                        const calc = (val: number, lim: number) => {
+                          const v = Math.round(val * mirror.percentage / 100 * 10) / 10;
+                          const l = Math.round(lim * mirror.percentage / 100 * 10) / 10;
+                          const pct = l > 0 ? Math.round(v / l * 100) : 0;
+                          return { v, l, pct };
+                        };
+                        const cClean = calc(risk.cleanOpRisk.value || 0, risk.cleanOpRisk.limit || 0);
+                        const cCredit = calc(risk.creditOpRisk.value || 0, risk.creditOpRisk.limit || 0);
+                        const cIndirect = calc(risk.indirectLosses.value || 0, risk.indirectLosses.limit || 0);
 
-            {/* Mirroring */}
-            {risk.mirrors.length > 0 && (
-              <section id="mirroring" className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Зеркалирование</h2>
-                </div>
+                        const ny = mirror.nextYearLimits;
+                        const rows = [
+                          { label: 'Чистые', cur: cClean, ny: ny?.cleanOp },
+                          { label: 'В кредитовании', cur: cCredit, ny: ny?.creditOp },
+                          { label: 'Косвенные', cur: cIndirect, ny: ny?.indirect },
+                        ];
 
-                {/* Group action for "my mirrors" awaiting approval */}
-                {campaignActive && myPendingMirrors.length > 1 && (
-                  <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
-                    <div className="text-sm">
-                      <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
-                      {selectedMirrorIds.size > 0 && (
-                        <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
-                        <Check className="w-3.5 h-3.5" />
-                        Согласовать все мои зеркала
-                      </Button>
-                      <ReturnPopover
-                        label="Вернуть выбранные"
-                        helper="Комментарий будет применён ко всем выбранным зеркалам."
-                        onSubmit={returnSelectedMirrors}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {risk.mirrors.map((mirror) => {
-                    const r = readMirror(mirror);
-                    const status = r.status;
-                    const isMine = !!mirror.isMine;
-                    const requiresMyApproval = isMine && status === 'Требует согласования';
-
-                    // current per-loss-type values
-                    const calc = (val: number, lim: number) => {
-                      const v = Math.round(val * mirror.percentage / 100 * 10) / 10;
-                      const l = Math.round(lim * mirror.percentage / 100 * 10) / 10;
-                      const pct = l > 0 ? Math.round(v / l * 100) : 0;
-                      return { v, l, pct };
-                    };
-                    const cClean = calc(risk.cleanOpRisk.value || 0, risk.cleanOpRisk.limit || 0);
-                    const cCredit = calc(risk.creditOpRisk.value || 0, risk.creditOpRisk.limit || 0);
-                    const cIndirect = calc(risk.indirectLosses.value || 0, risk.indirectLosses.limit || 0);
-
-                    const ny = mirror.nextYearLimits;
-
-                    const rows = [
-                      { label: 'Чистые', cur: cClean, ny: ny?.cleanOp },
-                      { label: 'В кредитовании', cur: cCredit, ny: ny?.creditOp },
-                      { label: 'Косвенные', cur: cIndirect, ny: ny?.indirect },
-                    ];
-
-                    return (
-                      <div key={mirror.id} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
-                        {/* Header: subdivision + status + select */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-2 min-w-0">
-                            {requiresMyApproval && (
-                              <Checkbox
-                                checked={selectedMirrorIds.has(mirror.id)}
-                                onCheckedChange={() => toggleSelect(mirror.id)}
-                                className="mt-1"
-                              />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
-                              {status === 'Ожидает другого согласующего' && mirror.approver && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                  Ожидает согласования: {mirror.approver}
-                                </p>
-                              )}
-                              {status === 'Согласовано' && mirror.approver && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                  Согласовал: {mirror.approver}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {status && <MirrorStatusTag status={status} />}
-                        </div>
-
-                        {/* Per loss-type rows */}
-                        <div className="space-y-2">
-                          {rows.map(row => (
-                            <div key={row.label} className="rounded-lg border border-border/50 overflow-hidden">
-                              <div className="px-3 py-2 flex items-center justify-between gap-3">
-                                <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
-                                <div className="flex items-center gap-4 flex-1 justify-end">
-                                  <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
-                                  <span className={cn(
-                                    "text-xs font-semibold w-10 text-right",
-                                    row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
-                                  )}>
-                                    {row.cur.pct}%
-                                  </span>
-                                  <span className="text-[11px] text-muted-foreground w-28 text-right">
-                                    лимит {row.cur.l} млн ₽
-                                  </span>
+                        return (
+                          <div key={mirror.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2 min-w-0">
+                                {requiresMyApproval && (
+                                  <Checkbox
+                                    checked={selectedMirrorIds.has(mirror.id)}
+                                    onCheckedChange={() => toggleSelect(mirror.id)}
+                                    className="mt-1"
+                                  />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
+                                  {status === 'Ожидает другого согласующего' && mirror.approver && (
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">Ожидает согласования: {mirror.approver}</p>
+                                  )}
+                                  {status === 'Согласовано' && mirror.approver && (
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">Согласовал: {mirror.approver}</p>
+                                  )}
                                 </div>
                               </div>
-                              {campaignActive && row.ny != null && (
-                                <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
-                                  <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                                  <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {status === 'Возвращено' && r.returnComment && (
+                                  <button
+                                    type="button"
+                                    title="Комментарий согласующего"
+                                    onClick={() => setCommentDialog({ open: true, mirror: { ...mirror, returnComment: r.returnComment } })}
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-destructive/30 bg-destructive/[0.06] text-destructive hover:bg-destructive/10 transition-colors"
+                                  >
+                                    <MessageSquareWarning className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {status && <MirrorStatusTag status={status} />}
+                              </div>
                             </div>
-                          ))}
-                        </div>
 
-                        {/* Returned comment */}
-                        {status === 'Возвращено' && r.returnComment && (
-                          <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/[0.04]">
-                            <p className="text-[11px] uppercase tracking-wide font-medium text-destructive/80 mb-1">
-                              Комментарий согласующего
-                            </p>
-                            <p className="text-xs text-foreground/90">{r.returnComment}</p>
+                            <div className="space-y-2">
+                              {rows.map(row => (
+                                <div key={row.label} className="rounded-lg border border-border/50 bg-card overflow-hidden">
+                                  <div className="px-3 py-2 flex items-center justify-between gap-3">
+                                    <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
+                                    <div className="flex items-center gap-4 flex-1 justify-end">
+                                      <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
+                                      <span className={cn(
+                                        "text-xs font-semibold w-10 text-right",
+                                        row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
+                                      )}>
+                                        {row.cur.pct}%
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground w-28 text-right">
+                                        лимит {row.cur.l} млн ₽
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {campaignActive && row.ny != null && (
+                                    <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
+                                      <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                                      <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        )}
-
-                        {/* Local actions only when this mirror needs my approval */}
-                        {requiresMyApproval && (
-                          <div className="flex items-center justify-end gap-2 pt-1">
-                            <ReturnPopover
-                              label="Вернуть"
-                              onSubmit={(c) => returnMirror(mirror.id, c)}
-                            />
-                            <Button size="sm" className="gap-1.5 h-7 text-xs" onClick={() => approveMirror(mirror.id)}>
-                              <Check className="w-3 h-3" />
-                              Согласовать
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* Connections */}
-            <section id="connections" className="space-y-4">
-              <h2 className="text-base font-semibold">Связи</h2>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Меры</h3>
-                {mockMeasures.map((measure) => (
-                  <div key={measure.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                    <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{measure.title}</p>
-                      <p className="text-xs text-muted-foreground">{measure.id} • {measure.plannedDate}</p>
+                        );
+                      })}
                     </div>
-                    <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/40 shrink-0">
-                      {measure.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Решения по рискам</h3>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/30 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Пересмотр стратегии реагирования</p>
-                    <p className="text-xs text-muted-foreground">RSK-001 • 10.02.2026</p>
+              {/* Connections */}
+              <AccordionItem value="connections" id="connections" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Связи</AccordionTrigger>
+                <AccordionContent className="pb-4 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Меры</h3>
+                    {mockMeasures.map((measure) => (
+                      <div key={measure.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                        <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{measure.title}</p>
+                          <p className="text-xs text-muted-foreground">{measure.id} • {measure.plannedDate}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/40 shrink-0">
+                          {measure.status}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                  <Badge variant="outline" className="text-xs shrink-0">В работе</Badge>
-                </div>
-              </div>
-            </section>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Решения по рискам</h3>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground/30 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Пересмотр стратегии реагирования</p>
+                        <p className="text-xs text-muted-foreground">RSK-001 • 10.02.2026</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">В работе</Badge>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
+
 
           {/* Sidebar — single Информация panel, no tab toggle */}
           <div className="space-y-4">
@@ -727,6 +767,30 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
       <HistoryDrawer
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
+      />
+
+      <ScenarioDrawer
+        scenario={risk.scenarios.find(s => s.id === scenarioDrawerId) ?? null}
+        risk={risk}
+        fmtVal={fmtVal}
+        isOpen={!!scenarioDrawerId}
+        onClose={() => setScenarioDrawerId(null)}
+      />
+
+      <ReturnMirrorsDialog
+        isOpen={returnDialog.open}
+        onClose={() => setReturnDialog({ open: false, mirrorIds: [] })}
+        count={returnDialog.mirrorIds.length}
+        onSubmit={(c) => { returnDialog.mirrorIds.forEach(id => returnMirror(id, c)); setSelectedMirrorIds(new Set()); }}
+      />
+
+      <CommentDialog
+        isOpen={commentDialog.open}
+        onClose={() => setCommentDialog({ open: false, mirror: null })}
+        comment={commentDialog.mirror?.returnComment}
+        author={commentDialog.mirror?.returnCommentAuthor || commentDialog.mirror?.approver}
+        date={commentDialog.mirror?.returnCommentDate}
+        subdivision={commentDialog.mirror?.subdivision}
       />
     </>
   );
