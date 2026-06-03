@@ -178,32 +178,84 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario:
   );
 }
 
-/** Modal to return one or many mirrors with a comment. */
-function ReturnMirrorsDialog({ isOpen, onClose, onSubmit, count }: { isOpen: boolean; onClose: () => void; onSubmit: (comment: string) => void; count: number }) {
+/** Modal to return mirrors with a checkbox list and required comment. */
+function ReturnMirrorsDialog({
+  isOpen,
+  onClose,
+  onSubmit,
+  mirrors,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (mirrorIds: string[], comment: string) => void;
+  mirrors: Mirror[];
+}) {
   const [comment, setComment] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) {
+      setComment('');
+      setSelected(new Set());
+      onClose();
+    }
+  };
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const canSubmit = selected.size > 0 && comment.trim().length > 0;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setComment(''); onClose(); } }}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Вернуть на доработку</DialogTitle>
+          <DialogTitle>Возврат зеркал</DialogTitle>
           <DialogDescription>
-            {count > 1
-              ? `Комментарий будет применён ко всем выбранным зеркалам (${count}).`
-              : 'Опишите, что нужно скорректировать.'}
+            Выберите зеркала и укажите комментарий для исполнителя.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+          {mirrors.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет доступных зеркал.</p>
+          ) : mirrors.map(m => (
+            <label
+              key={m.id}
+              className="flex items-start gap-2 p-2 rounded-md border border-border/60 hover:bg-accent/40 cursor-pointer"
+            >
+              <Checkbox
+                checked={selected.has(m.id)}
+                onCheckedChange={() => toggle(m.id)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">{m.subdivision}</span>
+            </label>
+          ))}
+        </div>
+
         <Textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Комментарий для исполнителя…"
-          className="min-h-[120px]"
-          autoFocus
+          placeholder="Комментарий *"
+          className="min-h-[100px]"
         />
+
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { setComment(''); onClose(); }}>Отмена</Button>
+          <Button variant="ghost" onClick={() => handleOpenChange(false)}>Отмена</Button>
           <Button
-            disabled={!comment.trim()}
-            onClick={() => { onSubmit(comment.trim()); setComment(''); onClose(); }}
+            disabled={!canSubmit}
+            onClick={() => {
+              onSubmit(Array.from(selected), comment.trim());
+              setComment('');
+              setSelected(new Set());
+              onClose();
+            }}
           >
             Вернуть
           </Button>
@@ -506,33 +558,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                     </span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-4 space-y-3">
-                    {/* Group action for "my mirrors" awaiting approval */}
-                    {campaignActive && myPendingMirrors.length > 1 && (
-                      <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
-                        <div className="text-sm">
-                          <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
-                          {selectedMirrorIds.size > 0 && (
-                            <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
-                            <Check className="w-3.5 h-3.5" />
-                            Согласовать все мои зеркала
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 h-8 text-xs"
-                            disabled={selectedMirrorIds.size === 0}
-                            onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
-                          >
-                            <Undo2 className="w-3.5 h-3.5" />
-                            Вернуть выбранные
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+
 
                     <div className="space-y-3">
                       {risk.mirrors.map((mirror) => {
@@ -562,14 +588,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           <div key={mirror.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-2 min-w-0">
-                                {requiresMyApproval && (
-                                  <Checkbox
-                                    checked={selectedMirrorIds.has(mirror.id)}
-                                    onCheckedChange={() => toggleSelect(mirror.id)}
-                                    className="mt-1"
-                                  />
-                                )}
                                 <div className="min-w-0">
+
                                   <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
                                   {status === 'Ожидает другого согласующего' && mirror.approver && (
                                     <p className="text-[11px] text-muted-foreground mt-0.5">Ожидает согласования: {mirror.approver}</p>
@@ -721,40 +741,58 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               Добавить меру
             </Button>
 
-            {/* Mirror approval block — separate from general risk approval */}
-            {campaignActive && myPendingMirrors.length > 0 && (
-              <div className="p-3 rounded-xl border border-primary/20 bg-primary/[0.04] space-y-2">
-                <p className="text-xs font-semibold text-foreground">Зеркалирование</p>
-                <p className="text-xs text-muted-foreground">
-                  {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'требует' : 'требуют'} вашего согласования
-                </p>
-                <Button size="sm" className="w-full gap-1.5" onClick={approveAllMyMirrors}>
-                  <Check className="w-3.5 h-3.5" />
-                  Согласовать все мои зеркала
-                </Button>
-              </div>
-            )}
+            {/* Single workflow action block — stage-driven */}
+            {(() => {
+              const stage = risk.mirrorStage;
+              const isReturned = risk.campaignStatus === 'Возвращён на корректировку';
+              const allApproved = risk.mirrors.length > 0 && risk.mirrors.every(m => readMirror(m).status === 'Согласовано');
+              const isMirrorApprover = myPendingMirrors.length > 0;
+              const returnableMirrors = isMirrorApprover ? myPendingMirrors : risk.mirrors;
 
-            {/* General risk workflow actions — short labels */}
-            <div className="sticky top-4 space-y-2 pt-2 border-t border-border">
-              {risk.mirrorStage === 'Заполнение' ? (
-                <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
-              ) : (
-                <>
-                  <Button variant="default" className="w-full" size="sm" disabled={risk.mirrorStage === 'Согласование'} title={risk.mirrorStage === 'Согласование' ? 'Сначала согласуйте зеркала' : undefined}>
-                    Согласовать
-                  </Button>
-                  {risk.mirrorStage === 'Согласование' && (
-                    <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+              return (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  {isReturned ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm">Сохранить</Button>
+                      <Button variant="outline" className="w-full" size="sm" onClick={onClose}>Отмена</Button>
+                    </>
+                  ) : stage === 'Заполнение' ? (
+                    <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
+                  ) : stage === 'Согласование' && isMirrorApprover ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm" onClick={approveAllMyMirrors}>Согласовать</Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                        onClick={() => setReturnDialog({ open: true, mirrorIds: returnableMirrors.map(m => m.id) })}
+                      >
+                        Вернуть
+                      </Button>
+                    </>
+                  ) : stage === 'Согласование' && !allApproved ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm" disabled>Согласовать</Button>
+                      <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="default" className="w-full" size="sm">Согласовать</Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                        onClick={() => setReturnDialog({ open: true, mirrorIds: returnableMirrors.map(m => m.id) })}
+                      >
+                        Вернуть
+                      </Button>
+                    </>
                   )}
-                  <Button variant="outline" className="w-full" size="sm">Вернуть</Button>
-                </>
-              )}
-              <Button variant="secondary" className="w-full gap-2" size="sm">
-                <XCircle className="w-3.5 h-3.5" />
-                Закрыть
-              </Button>
-            </div>
+                </div>
+              );
+            })()}
+
+
 
           </div>
         </div>
@@ -780,9 +818,10 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
       <ReturnMirrorsDialog
         isOpen={returnDialog.open}
         onClose={() => setReturnDialog({ open: false, mirrorIds: [] })}
-        count={returnDialog.mirrorIds.length}
-        onSubmit={(c) => { returnDialog.mirrorIds.forEach(id => returnMirror(id, c)); setSelectedMirrorIds(new Set()); }}
+        mirrors={risk.mirrors.filter(m => returnDialog.mirrorIds.includes(m.id))}
+        onSubmit={(ids, comment) => { ids.forEach(id => returnMirror(id, comment)); setSelectedMirrorIds(new Set()); }}
       />
+
 
       <CommentDialog
         isOpen={commentDialog.open}
