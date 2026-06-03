@@ -902,6 +902,20 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Описание риска<span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Введите описание риска"
+                  className="min-h-[88px]"
+                  maxLength={2000}
+                />
+              </div>
+
+
               {/* Продолжить — in both modes, not a gate */}
               <div className="flex justify-end pt-2">
                 <Button variant={isEditMode ? "outline" : "default"} onClick={handleContinueToStep2}>
