@@ -8,12 +8,14 @@ export const mockRisks: Risk[] = [
     subdivision: 'Управление продаж и обслуживания',
     process: 'П871',
     riskName: 'Выдача кредита заемщику, несоответствующему требованиям Банка',
+    description: 'Риск выдачи кредита заёмщику, не соответствующему требованиям Банка по причине предоставления недостоверных сведений или сбоев в процессе верификации. Реализация может привести к финансовым потерям и репутационному ущербу.',
     riskLevel: 'Высокий',
     riskProfile: 'Кредитный риск',
     monitoringStatus: 'Утверждён',
     riskPartner: 'Петров П.П.',
     riskOwner: 'Иванов Ива Иванович',
     campaignStatus: 'На согласовании',
+    mirrorStage: 'Согласование',
     proposedLimits: { cleanOpRisk: 12, creditOpRisk: 6, indirectLosses: 4.5, justification: 'Рост портфеля и инфляция' },
     cleanOpRisk: { value: 8.5, utilization: 85, limit: 10, fact2024: 10.1, fact2025: 4.4, forecast2025: 8.9 },
     creditOpRisk: { value: 3.2, utilization: 64, limit: 5 },
@@ -26,12 +28,19 @@ export const mockRisks: Risk[] = [
         id: '1',
         description: 'В процессе подачи заявки через систему «Супербанк Онлайн» клиент, не соответствующий требованиям Банка, может предоставить недостоверные сведения, которые не были должным образом проверены, что приводит к положительному решению по заявке.',
         percentage: 30,
+        probability: 16,
+        riskTypes: ['Неполные, неточные, неактуальные данные из внутренних источников', 'Кредитный риск'],
+        causeType: 'Сбой ИТ-систем',
+        itService: 'АБС',
+        sources: [{ type: 'Риски', count: 99 }, { type: 'События', count: 99 }],
+        factClean: 6, factCredit: 2,
         groupScenario: 'Предоставление недостоверных сведений клиентом'
       }
     ],
     mirrors: [
-      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4, approvalStatus: 'Требует согласования', approver: 'Садыков И.И.', isMine: true, nextYearLimits: { cleanOp: 10, creditOp: 9, indirect: 8 } },
-      { id: '2', subdivision: 'Блок ТБ / Дивизион КК', percentage: 20, fact: 1, factPercentage: 0, approvalStatus: 'Ожидает другого согласующего', approver: 'Иванов И.И.', nextYearLimits: { cleanOp: 7, creditOp: 5, indirect: 4 } }
+      { id: '1', subdivision: 'Экосистемы B2C/ Дивизион ЗиС', percentage: 30, fact: 2, factPercentage: 4, approvalStatus: 'Требует согласования', approver: 'Садыков И.И.', isMine: true, currentLimits: { cleanOp: 0, creditOp: 0, indirect: 0 }, currentFact: { cleanOp: 0, creditOp: 0, indirect: 0 }, nextYearLimits: { cleanOp: 2.78, creditOp: 1.4, indirect: 1.26 } },
+      { id: '2', subdivision: 'Блок ТБ / Дивизион ЖЖ', percentage: 20, fact: 1, factPercentage: 0, approvalStatus: 'Требует согласования', approver: 'Иванов И.И.', currentLimits: { cleanOp: 0, creditOp: 0, indirect: 6 }, currentFact: { cleanOp: 0, creditOp: 0, indirect: 0 }, nextYearLimits: { cleanOp: 2, creditOp: 0.54, indirect: 0.67 } },
+      { id: '3', subdivision: 'Блок ТБ / Дивизион КК', percentage: 15, fact: 0.5, factPercentage: 2, approvalStatus: 'Возвращено', approver: 'Константинопольский К.К.', returnComment: 'Здесь сотрудник сообщает почему оценка данное зеркало требует корректировки', returnCommentDate: '23.02.2025', returnCommentAuthor: 'Константинопольский Константин Константинович', currentLimits: { cleanOp: 0, creditOp: 0, indirect: 6 }, currentFact: { cleanOp: 0, creditOp: 0, indirect: 0 }, nextYearLimits: { cleanOp: 3, creditOp: 4, indirect: 1 } }
     ],
     author: 'Иванов Ива Иванович',
     createdAt: '15.01.2026',
