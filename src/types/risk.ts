@@ -5,8 +5,13 @@ export interface Risk {
   subdivision: string;
   process: string;
   riskName: string;
+  description?: string;
   riskLevel: 'Высокий' | 'Средний' | 'Низкий';
   riskProfile: string;
+
+  // Workflow stage for limit campaign: mirroring fill → mirror approval → final approval
+  mirrorStage?: 'Заполнение' | 'Согласование' | 'Согласовано';
+
   
   // Loss limits
   cleanOpRisk: LossLimit;
@@ -86,7 +91,14 @@ export interface Scenario {
   groupScenario: string;
   causeType?: string;
   itService?: string;
+  riskTypes?: string[];
+  probability?: number;
+  sources?: { type: string; count: number }[];
+  factClean?: number;
+  factCredit?: number;
+  factIndirect?: number;
 }
+
 
 export type MirrorApprovalStatus =
   | 'Черновик'
@@ -109,6 +121,10 @@ export interface Mirror {
   approver?: string;
   isMine?: boolean;
   returnComment?: string;
+  returnCommentDate?: string;
+  returnCommentAuthor?: string;
+  currentLimits?: { cleanOp?: number; creditOp?: number; indirect?: number };
+  currentFact?: { cleanOp?: number; creditOp?: number; indirect?: number };
   nextYearLimits?: {
     cleanOp?: number;
     creditOp?: number;

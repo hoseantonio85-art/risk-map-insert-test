@@ -73,7 +73,7 @@ const sections = [
   { id: 'connections', label: 'Связи' },
 ];
 
-type SidebarTab = 'info' | 'approvers';
+
 
 import type { Scenario } from '@/types/risk';
 
@@ -210,7 +210,7 @@ function ReturnPopover({ label, onSubmit, helper }: { label: string; onSubmit: (
 export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: RiskDetailViewProps) {
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('info');
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
@@ -626,32 +626,11 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             </section>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar — single Информация panel, no tab toggle */}
           <div className="space-y-4">
-            <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
-              <button
-                onClick={() => setSidebarTab('info')}
-                className={cn(
-                  "flex-1 text-xs font-medium py-1.5 rounded-md transition-colors",
-                  sidebarTab === 'info' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Информация
-              </button>
-              <button
-                onClick={() => setSidebarTab('approvers')}
-                className={cn(
-                  "flex-1 text-xs font-medium py-1.5 rounded-md transition-colors",
-                  sidebarTab === 'approvers' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Согласующие
-              </button>
-            </div>
-
-            {sidebarTab === 'info' ? (
-              <div className="space-y-4">
+            <div className="space-y-4">
                 <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                  <h3 className="text-sm font-semibold">Информация</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Статус</span>
@@ -689,29 +668,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                <h3 className="font-semibold text-sm">Согласующие</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Риск-партнер</span>
-                    <p className="font-medium">Петров П.П.</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Согласующий зеркало</span>
-                    <p className="font-medium">Сидоров С.С.</p>
-                  </div>
-                  {risk.mirrors.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Участники зеркалирования</span>
-                      {risk.mirrors.map((m) => (
-                        <p key={m.id} className="text-xs">{m.subdivision}</p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+
 
             <Button variant="outline" className="w-full gap-2" onClick={() => setHistoryOpen(true)}>
               <History className="w-4 h-4" />
@@ -738,20 +695,27 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             )}
 
-            {/* General risk workflow actions */}
+            {/* General risk workflow actions — short labels */}
             <div className="sticky top-4 space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Действия по риску</p>
-              <Button variant="default" className="w-full" size="sm">
-                Согласовать риск
-              </Button>
-              <Button variant="outline" className="w-full" size="sm">
-                Вернуть риск на доработку
-              </Button>
+              {risk.mirrorStage === 'Заполнение' ? (
+                <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
+              ) : (
+                <>
+                  <Button variant="default" className="w-full" size="sm" disabled={risk.mirrorStage === 'Согласование'} title={risk.mirrorStage === 'Согласование' ? 'Сначала согласуйте зеркала' : undefined}>
+                    Согласовать
+                  </Button>
+                  {risk.mirrorStage === 'Согласование' && (
+                    <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+                  )}
+                  <Button variant="outline" className="w-full" size="sm">Вернуть</Button>
+                </>
+              )}
               <Button variant="secondary" className="w-full gap-2" size="sm">
                 <XCircle className="w-3.5 h-3.5" />
-                Закрыть риск
+                Закрыть
               </Button>
             </div>
+
           </div>
         </div>
       </FullscreenLightbox>

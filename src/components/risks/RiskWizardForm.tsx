@@ -51,7 +51,9 @@ interface ScenarioFormData {
   probability: number;
   causeType?: string;
   itService?: string;
+  riskTypes?: string[];
 }
+
 
 const causeTypes = [
   'Человеческий фактор',
@@ -208,77 +210,88 @@ function ClearableSelect({
   );
 }
 
-function ExtraParamsBlock({
-  causeType,
-  itService,
-  onCauseTypeChange,
-  onItServiceChange,
-}: {
-  causeType?: string;
-  itService?: string;
-  onCauseTypeChange: (v: string) => void;
-  onItServiceChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(!!(causeType || itService));
-  const hasBothFilled = !!(causeType && itService);
-  const hasAnyFilled = !!(causeType || itService);
+const riskTypesList = [
+  'Неполные, неточные, неактуальные данные из внутренних источников',
+  'Риск ошибок процесса управления персоналом',
+  'Регуляторный риск',
+  'Риск информационной безопасности',
+  'Кредитный риск',
+  'Операционный риск',
+  'Сбой ИТ-систем',
+];
 
-  const handleRemoveAll = () => {
-    if (hasBothFilled) {
-      if (!window.confirm('Удалить опции?')) return;
-    }
-    onCauseTypeChange('');
-    onItServiceChange('');
-    setOpen(false);
+/** IT-service relevance per cause type */
+function itServiceRequiredFor(causeType?: string): boolean {
+  return causeType === 'Сбой ИТ-систем';
+}
+
+function RiskTypeMultiSelect({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const toggle = (t: string) => {
+    onChange(value.includes(t) ? value.filter(x => x !== t) : [...value, t]);
   };
-
   return (
-    <div>
-      {!open ? (
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground">
+        Вид риска<span className="text-destructive">*</span>
+      </Label>
+      <div className="relative">
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          className="text-xs text-primary hover:underline flex items-center gap-1"
+          onClick={() => setOpen(o => !o)}
+          className="w-full min-h-9 rounded-md border border-input bg-background px-3 py-1.5 text-left text-sm flex items-center justify-between gap-2"
         >
-          <Plus className="w-3 h-3" />
-          Дополнительные параметры
+          <div className="flex flex-wrap gap-1.5 flex-1">
+            {value.length === 0 ? (
+              <span className="text-muted-foreground">Введите или выбрать из списка</span>
+            ) : (
+              value.map(v => (
+                <span key={v} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-muted border border-border">
+                  <span className="max-w-[200px] truncate">{v}</span>
+                  <X
+                    className="w-3 h-3 text-muted-foreground hover:text-foreground cursor-pointer"
+                    onClick={(e) => { e.stopPropagation(); toggle(v); }}
+                  />
+                </span>
+              ))
+            )}
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
         </button>
-      ) : (
-        <div className="space-y-3 pt-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">Дополнительные параметры</span>
-            <button
-              type="button"
-              onClick={handleRemoveAll}
-              className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-              Удалить опции
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <ClearableSelect
-              value={causeType}
-              onValueChange={onCauseTypeChange}
-              onClear={() => onCauseTypeChange('')}
-              placeholder="Выберите тип"
-              options={causeTypes}
-              label="Тип причины"
-            />
-            <ClearableSelect
-              value={itService}
-              onValueChange={onItServiceChange}
-              onClear={() => onItServiceChange('')}
-              placeholder="Выберите услугу"
-              options={itServices}
-              label="ИТ-услуга"
-            />
-          </div>
-        </div>
-      )}
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-md max-h-64 overflow-auto py-1">
+              {riskTypesList.map(t => {
+                const selected = value.includes(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggle(t)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2",
+                      selected && "bg-primary/5"
+                    )}
+                  >
+                    <span className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center shrink-0",
+                      selected ? "bg-primary border-primary" : "border-border"
+                    )}>
+                      {selected && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </span>
+                    <span className="flex-1">{t}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
+
 
 function CollapsibleScenario({
   scenario,
@@ -295,7 +308,7 @@ function CollapsibleScenario({
   percentage: number;
   onRemove: () => void;
   canRemove: boolean;
-  onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
+  onUpdate: (field: keyof ScenarioFormData, value: string | number | string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -347,47 +360,85 @@ function CollapsibleScenario({
 
       {isOpen && (
         <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
-          <Textarea
-            value={scenario.description}
-            onChange={e => onUpdate('description', e.target.value)}
-            placeholder="Опишите сценарий реализации риска..."
-            className="min-h-[80px]"
-          />
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">
+              Название сценария<span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              value={scenario.description}
+              onChange={e => onUpdate('description', e.target.value)}
+              placeholder="Опишите сценарий реализации риска..."
+              className="min-h-[80px]"
+            />
+          </div>
 
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Чистые</Label>
-              <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Тип причины<span className="text-destructive">*</span>
+              </Label>
+              <Select value={scenario.causeType || ''} onValueChange={v => onUpdate('causeType', v)}>
+                <SelectTrigger className="h-9 bg-background"><SelectValue placeholder="Выберите тип" /></SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {causeTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">В кредитовании</Label>
-              <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Косвенные</Label>
-              <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
-              <FormattedInput
-                value={scenario.probability}
-                onChange={v => onUpdate('probability', v)}
-                placeholder="0"
-                min={0}
-                max={100}
-                showCurrency={false}
-              />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                ИТ-услуга{itServiceRequiredFor(scenario.causeType) && <span className="text-destructive">*</span>}
+              </Label>
+              <Select
+                value={scenario.itService || ''}
+                onValueChange={v => onUpdate('itService', v)}
+                disabled={!itServiceRequiredFor(scenario.causeType)}
+              >
+                <SelectTrigger className="h-9 bg-background">
+                  <SelectValue placeholder={itServiceRequiredFor(scenario.causeType) ? 'Выберите услугу' : 'Не требуется'} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {itServices.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <ExtraParamsBlock
-            causeType={scenario.causeType}
-            itService={scenario.itService}
-            onCauseTypeChange={(v) => onUpdate('causeType', v)}
-            onItServiceChange={(v) => onUpdate('itService', v)}
+          <RiskTypeMultiSelect
+            value={scenario.riskTypes || []}
+            onChange={v => onUpdate('riskTypes', v)}
           />
+
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Потенциальные потери по сценарию</p>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Чистые</Label>
+                <FormattedInput value={scenario.cleanOp} onChange={v => onUpdate('cleanOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">В кредитовании</Label>
+                <FormattedInput value={scenario.creditOp} onChange={v => onUpdate('creditOp', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Косвенные</Label>
+                <FormattedInput value={scenario.indirect} onChange={v => onUpdate('indirect', v)} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Вероятность (%)</Label>
+                <FormattedInput
+                  value={scenario.probability}
+                  onChange={v => onUpdate('probability', v)}
+                  placeholder="0"
+                  min={0}
+                  max={100}
+                  showCurrency={false}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -402,6 +453,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   // Step 1
   const [process, setProcess] = useState(editRisk?.process || '');
   const [riskProfile, setRiskProfile] = useState(editRisk?.riskProfile || '');
+  const [description, setDescription] = useState(editRisk?.description || '');
 
   // Step 2
   const [strategy, setStrategy] = useState(editRisk?.responseStrategy || '');
@@ -451,6 +503,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setCompletedSteps(isEditMode ? new Set<WizardStep>([1]) : new Set());
     setProcess(editRisk?.process || '');
     setRiskProfile(editRisk?.riskProfile || '');
+    setDescription(editRisk?.description || '');
     setStrategy(editRisk?.responseStrategy || '');
     setQualitativeLosses(editRisk?.qualitativeLosses || '');
     setScenarios(buildScenariosFromRisk(editRisk));
@@ -558,7 +611,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setScenarios(prev => prev.filter(s => s.id !== id));
   };
 
-  const updateScenario = (id: string, field: keyof ScenarioFormData, value: string | number) => {
+  const updateScenario = (id: string, field: keyof ScenarioFormData, value: string | number | string[]) => {
     setScenarios(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
@@ -571,7 +624,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setMirrors(prev => prev.filter(m => m.id !== id));
   };
 
-  const updateMirror = (id: string, field: keyof Mirror, value: string | number) => {
+  const updateMirror = (id: string, field: keyof Mirror, value: string | number | string[]) => {
     setMirrors(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
@@ -601,6 +654,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       process,
       riskProfile,
       riskName: riskProfile,
+      description,
       riskLevel: calculatedRiskLevel,
       responseStrategy: strategy,
       qualitativeLosses,
@@ -847,6 +901,20 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
                   </Select>
                 </div>
               </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Описание риска<span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="Введите описание риска"
+                  className="min-h-[88px]"
+                  maxLength={2000}
+                />
+              </div>
+
 
               {/* Продолжить — in both modes, not a gate */}
               <div className="flex justify-end pt-2">
