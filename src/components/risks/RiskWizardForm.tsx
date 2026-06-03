@@ -503,6 +503,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setCompletedSteps(isEditMode ? new Set<WizardStep>([1]) : new Set());
     setProcess(editRisk?.process || '');
     setRiskProfile(editRisk?.riskProfile || '');
+    setDescription(editRisk?.description || '');
     setStrategy(editRisk?.responseStrategy || '');
     setQualitativeLosses(editRisk?.qualitativeLosses || '');
     setScenarios(buildScenariosFromRisk(editRisk));
