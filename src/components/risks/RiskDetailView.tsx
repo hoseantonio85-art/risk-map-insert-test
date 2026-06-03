@@ -217,7 +217,7 @@ function ReturnMirrorsDialog({
         <DialogHeader>
           <DialogTitle>Возврат зеркал</DialogTitle>
           <DialogDescription>
-            Выберите зеркала и укажите комментарий для исполнителя.
+            Выберите зеркала, которые требуют корректировки, и укажите причину. Не выбранные зеркала согласуются автоматически.
           </DialogDescription>
         </DialogHeader>
 
@@ -271,19 +271,118 @@ function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: 
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Комментарий согласующего</DialogTitle>
+          <DialogTitle>Комментарии</DialogTitle>
           {subdivision && <DialogDescription>{subdivision}</DialogDescription>}
         </DialogHeader>
-        <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
-          <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
+        <div className="space-y-2">
+          <span className="inline-block text-[11px] px-2 py-0.5 rounded-md font-medium border text-orange-600 border-orange-300 bg-orange-50/60">
+            Корректировка
+          </span>
+          <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
+            <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
+          </div>
+          {(author || date) && (
+            <p className="text-xs text-muted-foreground">
+              {author}{author && date ? ' · ' : ''}{date}
+            </p>
+          )}
         </div>
-        {(author || date) && (
-          <p className="text-xs text-muted-foreground">
-            {author}{author && date ? ' · ' : ''}{date}
-          </p>
-        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Закрыть</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Mock "Other losses" grouped scenario item. */
+interface OtherLossItem {
+  id: string;
+  title: string;
+  amount: number;
+  date: string;
+  source: string;
+  relinkedTo?: string;
+}
+
+/** Drawer with "Прочие потери" items and per-item Перепривязать action. */
+function OtherLossesDrawer({
+  isOpen,
+  onClose,
+  items,
+  fmtVal,
+  onRelink,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  items: OtherLossItem[];
+  fmtVal: (v: number) => string;
+  onRelink: (itemId: string) => void;
+}) {
+  return (
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle>Прочие потери</SheetTitle>
+        </SheetHeader>
+        <p className="text-xs text-muted-foreground mb-3">
+          Факты без привязки к сценарию. Перепривяжите их к подходящему сценарию.
+        </p>
+        <div className="space-y-2">
+          {items.map(item => (
+            <div key={item.id} className="p-3 rounded-lg border border-border/60 bg-card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.date} · {item.source}</p>
+                </div>
+                <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
+              </div>
+              {item.relinkedTo ? (
+                <p className="text-[11px] text-primary mt-2">Перепривязано к сценарию</p>
+              ) : (
+                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => onRelink(item.id)}>
+                  Перепривязать
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Modal to pick a target scenario for re-linking. */
+function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolean; onClose: () => void; scenarios: { id: string; description: string }[]; onSubmit: (scenarioId: string) => void }) {
+  const [target, setTarget] = useState<string | null>(null);
+  return (
+    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setTarget(null); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Перепривязать к сценарию</DialogTitle>
+          <DialogDescription>Выберите сценарий, в источники которого попадёт эта потеря.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
+          {scenarios.map(s => (
+            <label key={s.id} className={cn(
+              "flex items-start gap-2 p-2.5 rounded-md border cursor-pointer text-sm",
+              target === s.id ? "border-primary bg-primary/[0.06]" : "border-border/60 hover:bg-accent/40"
+            )}>
+              <input
+                type="radio"
+                name="relink-target"
+                checked={target === s.id}
+                onChange={() => setTarget(s.id)}
+                className="mt-1"
+              />
+              <span>{s.description}</span>
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => { setTarget(null); onClose(); }}>Отмена</Button>
+          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Перепривязать</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -297,6 +396,16 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
   const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
   const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
+  const [otherLossesOpen, setOtherLossesOpen] = useState(false);
+  const [relinkItemId, setRelinkItemId] = useState<string | null>(null);
+
+  // Mock "Прочие потери" items (prototype only)
+  const [otherLossItems, setOtherLossItems] = useState<OtherLossItem[]>([
+    { id: 'ol-1', title: 'Списание по жалобе клиента', amount: 850_000, date: '12.03.2026', source: 'Жалобы' },
+    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', amount: 420_000, date: '04.04.2026', source: 'Инциденты' },
+    { id: 'ol-3', title: 'Штраф регулятора', amount: 530_000, date: '21.04.2026', source: 'Регулятор' },
+    { id: 'ol-4', title: 'Компенсация контрагенту', amount: 200_000, date: '02.05.2026', source: 'Договоры' },
+  ]);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
@@ -429,19 +538,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </p>
             )}
 
-            <section className="space-y-2">
-              <h2 className="text-base font-semibold">Оценка риска</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <p className="text-xs text-muted-foreground mb-1">Качественные потери</p>
-                  <p className="text-sm font-semibold">{risk.qualitativeLosses || 'Нет'}</p>
-                </div>
-                <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Уровень потерь</p>
-                  <RiskLevelBadge level={risk.riskLevel} />
-                </div>
+            {myPendingMirrors.length > 0 && (
+              <div className="p-4 rounded-xl border border-orange-300 bg-orange-50/60">
+                <p className="text-sm font-semibold text-orange-900">Согласование зеркалирований</p>
+                <p className="text-xs text-orange-900/80 mt-1">
+                  Согласуйте зеркала, созданные коллегами в выбранных подразделениях.
+                </p>
               </div>
-            </section>
+            )}
 
             <div className="p-4 rounded-xl border" style={{
               backgroundColor: 'hsl(var(--ai-alert))',
@@ -500,11 +604,11 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               {/* Potential Losses */}
               <AccordionItem value="potential" id="potential" className="border border-border/60 rounded-xl bg-card px-4">
                 <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Потенциальные потери</AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="grid grid-cols-3 gap-4">
+                <AccordionContent className="pb-4 space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
                     {([
                       { label: 'Чистые', value: risk.cleanOpRisk.value },
-                      { label: 'Кредитные', value: risk.creditOpRisk.value },
+                      { label: 'В кредитовании', value: risk.creditOpRisk.value },
                       { label: 'Косвенные', value: risk.indirectLosses.value },
                     ] as const).map((item) => (
                       <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-muted/30 space-y-1.5">
@@ -512,6 +616,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                         <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Качественные потери</p>
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/60 bg-muted/20">
+                      <p className="text-sm text-foreground">{risk.qualitativeLosses || 'Нет'}</p>
+                      <RiskLevelBadge level={risk.riskLevel} />
+                    </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -536,6 +648,30 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           onOpen={() => setScenarioDrawerId(scenario.id)}
                         />
                       ))}
+                      {/* Прочие потери — grouped scenario for unclassified facts */}
+                      {(() => {
+                        const total = otherLossItems.reduce((s, i) => s + i.amount, 0);
+                        const limit = 8_000_000;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setOtherLossesOpen(true)}
+                            className="w-full text-left rounded-xl border border-dashed border-border bg-muted/20 hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium">Прочие потери</p>
+                              <span className="text-[11px] px-2 py-0.5 rounded-md font-medium border text-muted-foreground border-border bg-card">
+                                Неклассифицированные
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                              <span>Факт <span className="font-semibold text-foreground">{fmtVal(total)} ₽</span></span>
+                              <span>Лимит <span className="font-semibold text-foreground">{fmtVal(limit)} ₽</span></span>
+                              <span>Источников <span className="font-semibold text-foreground">{otherLossItems.length}</span></span>
+                            </div>
+                          </button>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">Сценарии не добавлены</p>
@@ -614,28 +750,28 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                               </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
                               {rows.map(row => (
                                 <div key={row.label} className="rounded-lg border border-border/50 bg-card overflow-hidden">
-                                  <div className="px-3 py-2 flex items-center justify-between gap-3">
-                                    <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
-                                    <div className="flex items-center gap-4 flex-1 justify-end">
-                                      <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
+                                  <div className="px-3 py-2 space-y-1">
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{row.label}</p>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                      <span className="text-sm font-semibold text-foreground">{row.cur.v} млн ₽</span>
                                       <span className={cn(
-                                        "text-xs font-semibold w-10 text-right",
+                                        "text-xs font-semibold",
                                         row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
                                       )}>
                                         {row.cur.pct}%
                                       </span>
-                                      <span className="text-[11px] text-muted-foreground w-28 text-right">
-                                        лимит {row.cur.l} млн ₽
-                                      </span>
                                     </div>
+                                    <p className="text-[11px] text-muted-foreground">лимит {row.cur.l} млн ₽</p>
                                   </div>
-                                  {campaignActive && row.ny != null && (
+                                  {campaignActive && (
                                     <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
                                       <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                                      <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
+                                      <span className="text-xs font-semibold text-foreground">
+                                        {row.ny != null ? `${row.ny} млн ₽` : '—'}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -830,6 +966,25 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         author={commentDialog.mirror?.returnCommentAuthor || commentDialog.mirror?.approver}
         date={commentDialog.mirror?.returnCommentDate}
         subdivision={commentDialog.mirror?.subdivision}
+      />
+
+      <OtherLossesDrawer
+        isOpen={otherLossesOpen}
+        onClose={() => setOtherLossesOpen(false)}
+        items={otherLossItems}
+        fmtVal={fmtVal}
+        onRelink={(id) => setRelinkItemId(id)}
+      />
+
+      <RelinkDialog
+        isOpen={!!relinkItemId}
+        onClose={() => setRelinkItemId(null)}
+        scenarios={risk.scenarios.map(s => ({ id: s.id, description: s.description }))}
+        onSubmit={(scenarioId) => {
+          if (relinkItemId) {
+            setOtherLossItems(prev => prev.map(i => i.id === relinkItemId ? { ...i, relinkedTo: scenarioId } : i));
+          }
+        }}
       />
     </>
   );
