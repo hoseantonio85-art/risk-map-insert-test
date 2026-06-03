@@ -741,40 +741,15 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               Добавить меру
             </Button>
 
-            {/* Mirror approval block — separate from general risk approval */}
-            {campaignActive && myPendingMirrors.length > 0 && (
-              <div className="p-3 rounded-xl border border-primary/20 bg-primary/[0.04] space-y-2">
-                <p className="text-xs font-semibold text-foreground">Зеркалирование</p>
-                <p className="text-xs text-muted-foreground">
-                  {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'требует' : 'требуют'} вашего согласования
-                </p>
-                <Button size="sm" className="w-full gap-1.5" onClick={approveAllMyMirrors}>
-                  <Check className="w-3.5 h-3.5" />
-                  Согласовать все мои зеркала
-                </Button>
-              </div>
-            )}
+            {/* Single workflow action block — stage-driven */}
+            <WorkflowActions
+              risk={risk}
+              myPendingMirrors={myPendingMirrors}
+              allMirrorsApproved={risk.mirrors.length > 0 && risk.mirrors.every(m => readMirror(m).status === 'Согласовано')}
+              onApproveMine={approveAllMyMirrors}
+              onOpenReturn={(ids) => setReturnDialog({ open: true, mirrorIds: ids })}
+            />
 
-            {/* General risk workflow actions — short labels */}
-            <div className="sticky top-4 space-y-2 pt-2 border-t border-border">
-              {risk.mirrorStage === 'Заполнение' ? (
-                <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
-              ) : (
-                <>
-                  <Button variant="default" className="w-full" size="sm" disabled={risk.mirrorStage === 'Согласование'} title={risk.mirrorStage === 'Согласование' ? 'Сначала согласуйте зеркала' : undefined}>
-                    Согласовать
-                  </Button>
-                  {risk.mirrorStage === 'Согласование' && (
-                    <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
-                  )}
-                  <Button variant="outline" className="w-full" size="sm">Вернуть</Button>
-                </>
-              )}
-              <Button variant="secondary" className="w-full gap-2" size="sm">
-                <XCircle className="w-3.5 h-3.5" />
-                Закрыть
-              </Button>
-            </div>
 
           </div>
         </div>
