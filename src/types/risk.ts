@@ -121,6 +121,10 @@ export interface Mirror {
   approver?: string;
   isMine?: boolean;
   returnComment?: string;
+  returnCommentDate?: string;
+  returnCommentAuthor?: string;
+  currentLimits?: { cleanOp?: number; creditOp?: number; indirect?: number };
+  currentFact?: { cleanOp?: number; creditOp?: number; indirect?: number };
   nextYearLimits?: {
     cleanOp?: number;
     creditOp?: number;
