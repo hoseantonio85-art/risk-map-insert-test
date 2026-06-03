@@ -742,13 +742,56 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             </Button>
 
             {/* Single workflow action block — stage-driven */}
-            <WorkflowActions
-              risk={risk}
-              myPendingMirrors={myPendingMirrors}
-              allMirrorsApproved={risk.mirrors.length > 0 && risk.mirrors.every(m => readMirror(m).status === 'Согласовано')}
-              onApproveMine={approveAllMyMirrors}
-              onOpenReturn={(ids) => setReturnDialog({ open: true, mirrorIds: ids })}
-            />
+            {(() => {
+              const stage = risk.mirrorStage;
+              const isReturned = risk.campaignStatus === 'Возвращён на корректировку';
+              const allApproved = risk.mirrors.length > 0 && risk.mirrors.every(m => readMirror(m).status === 'Согласовано');
+              const isMirrorApprover = myPendingMirrors.length > 0;
+              const returnableMirrors = isMirrorApprover ? myPendingMirrors : risk.mirrors;
+
+              return (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  {isReturned ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm">Сохранить</Button>
+                      <Button variant="outline" className="w-full" size="sm" onClick={onClose}>Отмена</Button>
+                    </>
+                  ) : stage === 'Заполнение' ? (
+                    <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
+                  ) : stage === 'Согласование' && isMirrorApprover ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm" onClick={approveAllMyMirrors}>Согласовать</Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                        onClick={() => setReturnDialog({ open: true, mirrorIds: returnableMirrors.map(m => m.id) })}
+                      >
+                        Вернуть
+                      </Button>
+                    </>
+                  ) : stage === 'Согласование' && !allApproved ? (
+                    <>
+                      <Button variant="default" className="w-full" size="sm" disabled>Согласовать</Button>
+                      <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="default" className="w-full" size="sm">Согласовать</Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                        onClick={() => setReturnDialog({ open: true, mirrorIds: returnableMirrors.map(m => m.id) })}
+                      >
+                        Вернуть
+                      </Button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
 
 
           </div>
