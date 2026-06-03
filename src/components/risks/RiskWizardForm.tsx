@@ -308,7 +308,7 @@ function CollapsibleScenario({
   percentage: number;
   onRemove: () => void;
   canRemove: boolean;
-  onUpdate: (field: keyof ScenarioFormData, value: string | number) => void;
+  onUpdate: (field: keyof ScenarioFormData, value: string | number | string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -609,7 +609,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setScenarios(prev => prev.filter(s => s.id !== id));
   };
 
-  const updateScenario = (id: string, field: keyof ScenarioFormData, value: string | number) => {
+  const updateScenario = (id: string, field: keyof ScenarioFormData, value: string | number | string[]) => {
     setScenarios(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
@@ -622,7 +622,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
     setMirrors(prev => prev.filter(m => m.id !== id));
   };
 
-  const updateMirror = (id: string, field: keyof Mirror, value: string | number) => {
+  const updateMirror = (id: string, field: keyof Mirror, value: string | number | string[]) => {
     setMirrors(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
