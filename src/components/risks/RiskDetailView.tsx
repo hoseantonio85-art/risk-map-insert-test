@@ -242,6 +242,9 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
+  const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
+  const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
