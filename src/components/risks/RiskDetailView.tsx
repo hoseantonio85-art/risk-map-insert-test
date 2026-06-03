@@ -217,7 +217,7 @@ function ReturnMirrorsDialog({
         <DialogHeader>
           <DialogTitle>Возврат зеркал</DialogTitle>
           <DialogDescription>
-            Выберите зеркала и укажите комментарий для исполнителя.
+            Выберите зеркала, которые требуют корректировки, и укажите причину. Не выбранные зеркала согласуются автоматически.
           </DialogDescription>
         </DialogHeader>
 
