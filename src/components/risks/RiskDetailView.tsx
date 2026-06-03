@@ -750,28 +750,28 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                               </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
                               {rows.map(row => (
                                 <div key={row.label} className="rounded-lg border border-border/50 bg-card overflow-hidden">
-                                  <div className="px-3 py-2 flex items-center justify-between gap-3">
-                                    <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
-                                    <div className="flex items-center gap-4 flex-1 justify-end">
-                                      <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
+                                  <div className="px-3 py-2 space-y-1">
+                                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{row.label}</p>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                      <span className="text-sm font-semibold text-foreground">{row.cur.v} млн ₽</span>
                                       <span className={cn(
-                                        "text-xs font-semibold w-10 text-right",
+                                        "text-xs font-semibold",
                                         row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
                                       )}>
                                         {row.cur.pct}%
                                       </span>
-                                      <span className="text-[11px] text-muted-foreground w-28 text-right">
-                                        лимит {row.cur.l} млн ₽
-                                      </span>
                                     </div>
+                                    <p className="text-[11px] text-muted-foreground">лимит {row.cur.l} млн ₽</p>
                                   </div>
-                                  {campaignActive && row.ny != null && (
+                                  {campaignActive && (
                                     <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
                                       <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                                      <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
+                                      <span className="text-xs font-semibold text-foreground">
+                                        {row.ny != null ? `${row.ny} млн ₽` : '—'}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
