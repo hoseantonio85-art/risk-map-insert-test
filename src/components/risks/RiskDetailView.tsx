@@ -575,7 +575,19 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                               )}
                             </div>
                           </div>
-                          {status && <MirrorStatusTag status={status} />}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {status === 'Возвращено' && r.returnComment && (
+                              <button
+                                type="button"
+                                title="Комментарий согласующего"
+                                onClick={() => setCommentDialog({ open: true, mirror: { ...mirror, returnComment: r.returnComment } })}
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-destructive/30 bg-destructive/[0.06] text-destructive hover:bg-destructive/10 transition-colors"
+                              >
+                                <MessageSquareWarning className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {status && <MirrorStatusTag status={status} />}
+                          </div>
                         </div>
 
                         {/* Per loss-type rows */}
@@ -606,30 +618,6 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                             </div>
                           ))}
                         </div>
-
-                        {/* Returned comment */}
-                        {status === 'Возвращено' && r.returnComment && (
-                          <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/[0.04]">
-                            <p className="text-[11px] uppercase tracking-wide font-medium text-destructive/80 mb-1">
-                              Комментарий согласующего
-                            </p>
-                            <p className="text-xs text-foreground/90">{r.returnComment}</p>
-                          </div>
-                        )}
-
-                        {/* Local actions only when this mirror needs my approval */}
-                        {requiresMyApproval && (
-                          <div className="flex items-center justify-end gap-2 pt-1">
-                            <ReturnPopover
-                              label="Вернуть"
-                              onSubmit={(c) => returnMirror(mirror.id, c)}
-                            />
-                            <Button size="sm" className="gap-1.5 h-7 text-xs" onClick={() => approveMirror(mirror.id)}>
-                              <Check className="w-3 h-3" />
-                              Согласовать
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
