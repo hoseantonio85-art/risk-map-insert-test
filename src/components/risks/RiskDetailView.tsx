@@ -818,9 +818,10 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
       <ReturnMirrorsDialog
         isOpen={returnDialog.open}
         onClose={() => setReturnDialog({ open: false, mirrorIds: [] })}
-        count={returnDialog.mirrorIds.length}
-        onSubmit={(c) => { returnDialog.mirrorIds.forEach(id => returnMirror(id, c)); setSelectedMirrorIds(new Set()); }}
+        mirrors={risk.mirrors.filter(m => returnDialog.mirrorIds.includes(m.id))}
+        onSubmit={(ids, comment) => { ids.forEach(id => returnMirror(id, comment)); setSelectedMirrorIds(new Set()); }}
       />
+
 
       <CommentDialog
         isOpen={commentDialog.open}
