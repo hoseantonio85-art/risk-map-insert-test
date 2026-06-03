@@ -73,7 +73,7 @@ const sections = [
   { id: 'connections', label: 'Связи' },
 ];
 
-type SidebarTab = 'info' | 'approvers';
+
 
 import type { Scenario } from '@/types/risk';
 
