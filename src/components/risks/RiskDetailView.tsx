@@ -558,33 +558,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                     </span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-4 space-y-3">
-                    {/* Group action for "my mirrors" awaiting approval */}
-                    {campaignActive && myPendingMirrors.length > 1 && (
-                      <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
-                        <div className="text-sm">
-                          <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
-                          {selectedMirrorIds.size > 0 && (
-                            <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
-                            <Check className="w-3.5 h-3.5" />
-                            Согласовать все мои зеркала
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 h-8 text-xs"
-                            disabled={selectedMirrorIds.size === 0}
-                            onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
-                          >
-                            <Undo2 className="w-3.5 h-3.5" />
-                            Вернуть выбранные
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+
 
                     <div className="space-y-3">
                       {risk.mirrors.map((mirror) => {
