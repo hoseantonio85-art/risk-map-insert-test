@@ -178,32 +178,84 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario:
   );
 }
 
-/** Modal to return one or many mirrors with a comment. */
-function ReturnMirrorsDialog({ isOpen, onClose, onSubmit, count }: { isOpen: boolean; onClose: () => void; onSubmit: (comment: string) => void; count: number }) {
+/** Modal to return mirrors with a checkbox list and required comment. */
+function ReturnMirrorsDialog({
+  isOpen,
+  onClose,
+  onSubmit,
+  mirrors,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (mirrorIds: string[], comment: string) => void;
+  mirrors: Mirror[];
+}) {
   const [comment, setComment] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) {
+      setComment('');
+      setSelected(new Set());
+      onClose();
+    }
+  };
+
+  const toggle = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const canSubmit = selected.size > 0 && comment.trim().length > 0;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setComment(''); onClose(); } }}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Вернуть на доработку</DialogTitle>
+          <DialogTitle>Возврат зеркал</DialogTitle>
           <DialogDescription>
-            {count > 1
-              ? `Комментарий будет применён ко всем выбранным зеркалам (${count}).`
-              : 'Опишите, что нужно скорректировать.'}
+            Выберите зеркала и укажите комментарий для исполнителя.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1">
+          {mirrors.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет доступных зеркал.</p>
+          ) : mirrors.map(m => (
+            <label
+              key={m.id}
+              className="flex items-start gap-2 p-2 rounded-md border border-border/60 hover:bg-accent/40 cursor-pointer"
+            >
+              <Checkbox
+                checked={selected.has(m.id)}
+                onCheckedChange={() => toggle(m.id)}
+                className="mt-0.5"
+              />
+              <span className="text-sm">{m.subdivision}</span>
+            </label>
+          ))}
+        </div>
+
         <Textarea
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Комментарий для исполнителя…"
-          className="min-h-[120px]"
-          autoFocus
+          placeholder="Комментарий *"
+          className="min-h-[100px]"
         />
+
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { setComment(''); onClose(); }}>Отмена</Button>
+          <Button variant="ghost" onClick={() => handleOpenChange(false)}>Отмена</Button>
           <Button
-            disabled={!comment.trim()}
-            onClick={() => { onSubmit(comment.trim()); setComment(''); onClose(); }}
+            disabled={!canSubmit}
+            onClick={() => {
+              onSubmit(Array.from(selected), comment.trim());
+              setComment('');
+              setSelected(new Set());
+              onClose();
+            }}
           >
             Вернуть
           </Button>
