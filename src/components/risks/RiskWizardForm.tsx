@@ -654,6 +654,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
       process,
       riskProfile,
       riskName: riskProfile,
+      description,
       riskLevel: calculatedRiskLevel,
       responseStrategy: strategy,
       qualitativeLosses,
