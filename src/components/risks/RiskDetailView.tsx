@@ -877,26 +877,35 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               Добавить меру
             </Button>
 
-            {/* Single workflow action block — stage-driven */}
+            {/* Single workflow action block — sequential: mirrors → limit */}
             {(() => {
               const stage = risk.mirrorStage;
               const isReturned = risk.campaignStatus === 'Возвращён на корректировку';
               const allApproved = risk.mirrors.length > 0 && risk.mirrors.every(m => readMirror(m).status === 'Согласовано');
               const isMirrorApprover = myPendingMirrors.length > 0;
+              // Owner role: stage is fill-in, or no mirror approval context for this user
+              const isOwnerSubmit = stage === 'Заполнение';
+              // Limit approver role: stage is approval, user is not a mirror approver
+              const isLimitApprover = stage === 'Согласование' && !isMirrorApprover;
               const returnableMirrors = isMirrorApprover ? myPendingMirrors : risk.mirrors;
 
               return (
-                <div className="space-y-2 pt-2 border-t border-border">
+                <div className="space-y-2 pt-3 mt-1 border-t border-border">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground/70 font-medium px-0.5">
+                    Действия
+                  </p>
                   {isReturned ? (
                     <>
-                      <Button variant="default" className="w-full" size="sm">Сохранить</Button>
+                      <Button variant="default" className="w-full" size="sm">На согласование</Button>
                       <Button variant="outline" className="w-full" size="sm" onClick={onClose}>Отмена</Button>
                     </>
-                  ) : stage === 'Заполнение' ? (
-                    <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
-                  ) : stage === 'Согласование' && isMirrorApprover ? (
+                  ) : isOwnerSubmit ? (
+                    <Button variant="default" className="w-full" size="sm">На согласование</Button>
+                  ) : isMirrorApprover ? (
                     <>
-                      <Button variant="default" className="w-full" size="sm" onClick={approveAllMyMirrors}>Согласовать</Button>
+                      <Button variant="default" className="w-full" size="sm" onClick={approveAllMyMirrors}>
+                        Согласовать зеркала
+                      </Button>
                       <Button
                         variant="outline"
                         className="w-full"
@@ -906,14 +915,18 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                         Вернуть
                       </Button>
                     </>
-                  ) : stage === 'Согласование' && !allApproved ? (
+                  ) : isLimitApprover && !allApproved ? (
                     <>
-                      <Button variant="default" className="w-full" size="sm" disabled>Согласовать</Button>
-                      <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+                      <Button variant="default" className="w-full" size="sm" disabled>
+                        Согласовать лимит
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground text-center">
+                        Сначала согласуйте зеркала
+                      </p>
                     </>
                   ) : (
                     <>
-                      <Button variant="default" className="w-full" size="sm">Согласовать</Button>
+                      <Button variant="default" className="w-full" size="sm">Согласовать лимит</Button>
                       <Button
                         variant="outline"
                         className="w-full"
@@ -927,6 +940,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                 </div>
               );
             })()}
+
 
 
 
