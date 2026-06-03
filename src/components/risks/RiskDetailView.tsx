@@ -417,17 +417,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             </div>
 
-            <div className="sticky top-0 z-10 bg-card py-2 -mx-1 px-1 flex gap-2">
-              {sections.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border hover:border-primary/40 hover:text-primary transition-colors text-muted-foreground"
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
+
+
 
             <Accordion type="multiple" defaultValue={['utilization', 'potential', 'scenarios', 'mirroring', 'connections']} className="space-y-3">
               {/* Utilization */}
