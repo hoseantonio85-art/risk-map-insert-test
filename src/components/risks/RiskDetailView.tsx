@@ -768,6 +768,30 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         isOpen={historyOpen}
         onClose={() => setHistoryOpen(false)}
       />
+
+      <ScenarioDrawer
+        scenario={risk.scenarios.find(s => s.id === scenarioDrawerId) ?? null}
+        risk={risk}
+        fmtVal={fmtVal}
+        isOpen={!!scenarioDrawerId}
+        onClose={() => setScenarioDrawerId(null)}
+      />
+
+      <ReturnMirrorsDialog
+        isOpen={returnDialog.open}
+        onClose={() => setReturnDialog({ open: false, mirrorIds: [] })}
+        count={returnDialog.mirrorIds.length}
+        onSubmit={(c) => returnDialog.mirrorIds.forEach(id => returnMirror(id, c))}
+      />
+
+      <CommentDialog
+        isOpen={commentDialog.open}
+        onClose={() => setCommentDialog({ open: false, mirror: null })}
+        comment={commentDialog.mirror?.returnComment}
+        author={commentDialog.mirror?.returnCommentAuthor || commentDialog.mirror?.approver}
+        date={commentDialog.mirror?.returnCommentDate}
+        subdivision={commentDialog.mirror?.subdivision}
+      />
     </>
   );
 }
