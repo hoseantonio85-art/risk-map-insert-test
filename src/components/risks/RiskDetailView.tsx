@@ -538,19 +538,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </p>
             )}
 
-            <section className="space-y-2">
-              <h2 className="text-base font-semibold">Оценка риска</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl border border-border bg-card">
-                  <p className="text-xs text-muted-foreground mb-1">Качественные потери</p>
-                  <p className="text-sm font-semibold">{risk.qualitativeLosses || 'Нет'}</p>
-                </div>
-                <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Уровень потерь</p>
-                  <RiskLevelBadge level={risk.riskLevel} />
-                </div>
+            {myPendingMirrors.length > 0 && (
+              <div className="p-4 rounded-xl border border-orange-300 bg-orange-50/60">
+                <p className="text-sm font-semibold text-orange-900">Согласование зеркалирований</p>
+                <p className="text-xs text-orange-900/80 mt-1">
+                  Согласуйте зеркала, созданные коллегами в выбранных подразделениях.
+                </p>
               </div>
-            </section>
+            )}
 
             <div className="p-4 rounded-xl border" style={{
               backgroundColor: 'hsl(var(--ai-alert))',
