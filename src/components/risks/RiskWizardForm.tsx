@@ -453,6 +453,7 @@ export function RiskWizardForm({ isOpen, onClose, onSave, editRisk }: RiskWizard
   // Step 1
   const [process, setProcess] = useState(editRisk?.process || '');
   const [riskProfile, setRiskProfile] = useState(editRisk?.riskProfile || '');
+  const [description, setDescription] = useState(editRisk?.description || '');
 
   // Step 2
   const [strategy, setStrategy] = useState(editRisk?.responseStrategy || '');
