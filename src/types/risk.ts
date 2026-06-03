@@ -91,7 +91,14 @@ export interface Scenario {
   groupScenario: string;
   causeType?: string;
   itService?: string;
+  riskTypes?: string[];
+  probability?: number;
+  sources?: { type: string; count: number }[];
+  factClean?: number;
+  factCredit?: number;
+  factIndirect?: number;
 }
+
 
 export type MirrorApprovalStatus =
   | 'Черновик'
