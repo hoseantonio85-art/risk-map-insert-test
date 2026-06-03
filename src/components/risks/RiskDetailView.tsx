@@ -509,11 +509,16 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                         <Check className="w-3.5 h-3.5" />
                         Согласовать все мои зеркала
                       </Button>
-                      <ReturnPopover
-                        label="Вернуть выбранные"
-                        helper="Комментарий будет применён ко всем выбранным зеркалам."
-                        onSubmit={returnSelectedMirrors}
-                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 h-8 text-xs"
+                        disabled={selectedMirrorIds.size === 0}
+                        onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                        Вернуть выбранные
+                      </Button>
                     </div>
                   </div>
                 )}
