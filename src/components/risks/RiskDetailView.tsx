@@ -588,14 +588,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           <div key={mirror.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-2 min-w-0">
-                                {requiresMyApproval && (
-                                  <Checkbox
-                                    checked={selectedMirrorIds.has(mirror.id)}
-                                    onCheckedChange={() => toggleSelect(mirror.id)}
-                                    className="mt-1"
-                                  />
-                                )}
                                 <div className="min-w-0">
+
                                   <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
                                   {status === 'Ожидает другого согласующего' && mirror.approver && (
                                     <p className="text-[11px] text-muted-foreground mt-0.5">Ожидает согласования: {mirror.approver}</p>
