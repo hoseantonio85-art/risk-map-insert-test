@@ -695,20 +695,27 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               </div>
             )}
 
-            {/* General risk workflow actions */}
+            {/* General risk workflow actions — short labels */}
             <div className="sticky top-4 space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Действия по риску</p>
-              <Button variant="default" className="w-full" size="sm">
-                Согласовать риск
-              </Button>
-              <Button variant="outline" className="w-full" size="sm">
-                Вернуть риск на доработку
-              </Button>
+              {risk.mirrorStage === 'Заполнение' ? (
+                <Button variant="default" className="w-full" size="sm">Отправить зеркала</Button>
+              ) : (
+                <>
+                  <Button variant="default" className="w-full" size="sm" disabled={risk.mirrorStage === 'Согласование'} title={risk.mirrorStage === 'Согласование' ? 'Сначала согласуйте зеркала' : undefined}>
+                    Согласовать
+                  </Button>
+                  {risk.mirrorStage === 'Согласование' && (
+                    <p className="text-[11px] text-muted-foreground text-center">Сначала согласуйте зеркала</p>
+                  )}
+                  <Button variant="outline" className="w-full" size="sm">Вернуть</Button>
+                </>
+              )}
               <Button variant="secondary" className="w-full gap-2" size="sm">
                 <XCircle className="w-3.5 h-3.5" />
-                Закрыть риск
+                Закрыть
               </Button>
             </div>
+
           </div>
         </div>
       </FullscreenLightbox>
