@@ -51,7 +51,9 @@ interface ScenarioFormData {
   probability: number;
   causeType?: string;
   itService?: string;
+  riskTypes?: string[];
 }
+
 
 const causeTypes = [
   'Человеческий фактор',
