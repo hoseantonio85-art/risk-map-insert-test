@@ -271,19 +271,118 @@ function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: 
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Комментарий согласующего</DialogTitle>
+          <DialogTitle>Комментарии</DialogTitle>
           {subdivision && <DialogDescription>{subdivision}</DialogDescription>}
         </DialogHeader>
-        <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
-          <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
+        <div className="space-y-2">
+          <span className="inline-block text-[11px] px-2 py-0.5 rounded-md font-medium border text-orange-600 border-orange-300 bg-orange-50/60">
+            Корректировка
+          </span>
+          <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] p-3">
+            <p className="text-sm text-foreground whitespace-pre-wrap">{comment}</p>
+          </div>
+          {(author || date) && (
+            <p className="text-xs text-muted-foreground">
+              {author}{author && date ? ' · ' : ''}{date}
+            </p>
+          )}
         </div>
-        {(author || date) && (
-          <p className="text-xs text-muted-foreground">
-            {author}{author && date ? ' · ' : ''}{date}
-          </p>
-        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Закрыть</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Mock "Other losses" grouped scenario item. */
+interface OtherLossItem {
+  id: string;
+  title: string;
+  amount: number;
+  date: string;
+  source: string;
+  relinkedTo?: string;
+}
+
+/** Drawer with "Прочие потери" items and per-item Перепривязать action. */
+function OtherLossesDrawer({
+  isOpen,
+  onClose,
+  items,
+  fmtVal,
+  onRelink,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  items: OtherLossItem[];
+  fmtVal: (v: number) => string;
+  onRelink: (itemId: string) => void;
+}) {
+  return (
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
+        <SheetHeader className="mb-4">
+          <SheetTitle>Прочие потери</SheetTitle>
+        </SheetHeader>
+        <p className="text-xs text-muted-foreground mb-3">
+          Факты без привязки к сценарию. Перепривяжите их к подходящему сценарию.
+        </p>
+        <div className="space-y-2">
+          {items.map(item => (
+            <div key={item.id} className="p-3 rounded-lg border border-border/60 bg-card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{item.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.date} · {item.source}</p>
+                </div>
+                <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
+              </div>
+              {item.relinkedTo ? (
+                <p className="text-[11px] text-primary mt-2">Перепривязано к сценарию</p>
+              ) : (
+                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => onRelink(item.id)}>
+                  Перепривязать
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Modal to pick a target scenario for re-linking. */
+function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolean; onClose: () => void; scenarios: { id: string; description: string }[]; onSubmit: (scenarioId: string) => void }) {
+  const [target, setTarget] = useState<string | null>(null);
+  return (
+    <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setTarget(null); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Перепривязать к сценарию</DialogTitle>
+          <DialogDescription>Выберите сценарий, в источники которого попадёт эта потеря.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
+          {scenarios.map(s => (
+            <label key={s.id} className={cn(
+              "flex items-start gap-2 p-2.5 rounded-md border cursor-pointer text-sm",
+              target === s.id ? "border-primary bg-primary/[0.06]" : "border-border/60 hover:bg-accent/40"
+            )}>
+              <input
+                type="radio"
+                name="relink-target"
+                checked={target === s.id}
+                onChange={() => setTarget(s.id)}
+                className="mt-1"
+              />
+              <span>{s.description}</span>
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => { setTarget(null); onClose(); }}>Отмена</Button>
+          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Перепривязать</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
