@@ -396,6 +396,16 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
   const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
   const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
+  const [otherLossesOpen, setOtherLossesOpen] = useState(false);
+  const [relinkItemId, setRelinkItemId] = useState<string | null>(null);
+
+  // Mock "Прочие потери" items (prototype only)
+  const [otherLossItems, setOtherLossItems] = useState<OtherLossItem[]>([
+    { id: 'ol-1', title: 'Списание по жалобе клиента', amount: 850_000, date: '12.03.2026', source: 'Жалобы' },
+    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', amount: 420_000, date: '04.04.2026', source: 'Инциденты' },
+    { id: 'ol-3', title: 'Штраф регулятора', amount: 530_000, date: '21.04.2026', source: 'Регулятор' },
+    { id: 'ol-4', title: 'Компенсация контрагенту', amount: 200_000, date: '02.05.2026', source: 'Договоры' },
+  ]);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
