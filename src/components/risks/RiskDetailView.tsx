@@ -626,32 +626,11 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
             </section>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar — single Информация panel, no tab toggle */}
           <div className="space-y-4">
-            <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
-              <button
-                onClick={() => setSidebarTab('info')}
-                className={cn(
-                  "flex-1 text-xs font-medium py-1.5 rounded-md transition-colors",
-                  sidebarTab === 'info' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Информация
-              </button>
-              <button
-                onClick={() => setSidebarTab('approvers')}
-                className={cn(
-                  "flex-1 text-xs font-medium py-1.5 rounded-md transition-colors",
-                  sidebarTab === 'approvers' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Согласующие
-              </button>
-            </div>
-
-            {sidebarTab === 'info' ? (
-              <div className="space-y-4">
+            <div className="space-y-4">
                 <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                  <h3 className="text-sm font-semibold">Информация</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Статус</span>
@@ -689,29 +668,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                <h3 className="font-semibold text-sm">Согласующие</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Риск-партнер</span>
-                    <p className="font-medium">Петров П.П.</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">Согласующий зеркало</span>
-                    <p className="font-medium">Сидоров С.С.</p>
-                  </div>
-                  {risk.mirrors.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Участники зеркалирования</span>
-                      {risk.mirrors.map((m) => (
-                        <p key={m.id} className="text-xs">{m.subdivision}</p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+
 
             <Button variant="outline" className="w-full gap-2" onClick={() => setHistoryOpen(true)}>
               <History className="w-4 h-4" />
