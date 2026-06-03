@@ -405,7 +405,7 @@ function CollapsibleScenario({
 
           <RiskTypeMultiSelect
             value={scenario.riskTypes || []}
-            onChange={v => onUpdate('riskTypes', v as unknown as string)}
+            onChange={v => onUpdate('riskTypes', v)}
           />
 
           <div>
