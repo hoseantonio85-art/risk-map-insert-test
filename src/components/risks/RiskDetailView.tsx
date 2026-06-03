@@ -210,7 +210,7 @@ function ReturnPopover({ label, onSubmit, helper }: { label: string; onSubmit: (
 export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: RiskDetailViewProps) {
   const [utilizationOpen, setUtilizationOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('info');
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
   const [mirrorOverrides, setMirrorOverrides] = useState<Record<string, { status?: MirrorApprovalStatus; returnComment?: string }>>({});
