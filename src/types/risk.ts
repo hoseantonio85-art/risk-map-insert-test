@@ -5,8 +5,13 @@ export interface Risk {
   subdivision: string;
   process: string;
   riskName: string;
+  description?: string;
   riskLevel: 'Высокий' | 'Средний' | 'Низкий';
   riskProfile: string;
+
+  // Workflow stage for limit campaign: mirroring fill → mirror approval → final approval
+  mirrorStage?: 'Заполнение' | 'Согласование' | 'Согласовано';
+
   
   // Loss limits
   cleanOpRisk: LossLimit;
