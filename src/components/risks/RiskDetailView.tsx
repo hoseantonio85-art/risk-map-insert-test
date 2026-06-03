@@ -967,6 +967,25 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         date={commentDialog.mirror?.returnCommentDate}
         subdivision={commentDialog.mirror?.subdivision}
       />
+
+      <OtherLossesDrawer
+        isOpen={otherLossesOpen}
+        onClose={() => setOtherLossesOpen(false)}
+        items={otherLossItems}
+        fmtVal={fmtVal}
+        onRelink={(id) => setRelinkItemId(id)}
+      />
+
+      <RelinkDialog
+        isOpen={!!relinkItemId}
+        onClose={() => setRelinkItemId(null)}
+        scenarios={risk.scenarios.map(s => ({ id: s.id, description: s.description }))}
+        onSubmit={(scenarioId) => {
+          if (relinkItemId) {
+            setOtherLossItems(prev => prev.map(i => i.id === relinkItemId ? { ...i, relinkedTo: scenarioId } : i));
+          }
+        }}
+      />
     </>
   );
 }
