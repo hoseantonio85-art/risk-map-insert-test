@@ -604,11 +604,11 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               {/* Potential Losses */}
               <AccordionItem value="potential" id="potential" className="border border-border/60 rounded-xl bg-card px-4">
                 <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Потенциальные потери</AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="grid grid-cols-3 gap-4">
+                <AccordionContent className="pb-4 space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
                     {([
                       { label: 'Чистые', value: risk.cleanOpRisk.value },
-                      { label: 'Кредитные', value: risk.creditOpRisk.value },
+                      { label: 'В кредитовании', value: risk.creditOpRisk.value },
                       { label: 'Косвенные', value: risk.indirectLosses.value },
                     ] as const).map((item) => (
                       <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-muted/30 space-y-1.5">
@@ -616,6 +616,14 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                         <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Качественные потери</p>
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/60 bg-muted/20">
+                      <p className="text-sm text-foreground">{risk.qualitativeLosses || 'Нет'}</p>
+                      <RiskLevelBadge level={risk.riskLevel} />
+                    </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
