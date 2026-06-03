@@ -429,235 +429,251 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
               ))}
             </div>
 
-            {/* Utilization */}
-            <section id="utilization" className="space-y-3">
-              <h2 className="text-base font-semibold">Утилизация лимитов</h2>
-              <div className="grid grid-cols-3 gap-5">
-                {([
-                  { title: 'Чистые', limit: risk.cleanOpRisk, nextYear: nextYearRisk.clean },
-                  { title: 'Кредитные', limit: risk.creditOpRisk, nextYear: nextYearRisk.credit },
-                  { title: 'Косвенные', limit: risk.indirectLosses, nextYear: nextYearRisk.indirect },
-                ] as const).map((item) => (
-                  <div key={item.title} className="space-y-1.5">
-                    <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
-                    {campaignActive && item.nextYear != null && (
-                      <div className="px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/15 flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                        <span className="text-xs font-semibold text-foreground">{item.nextYear} млн ₽</span>
+            <Accordion type="multiple" defaultValue={['utilization', 'potential', 'scenarios', 'mirroring', 'connections']} className="space-y-3">
+              {/* Utilization */}
+              <AccordionItem value="utilization" id="utilization" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Утилизация лимитов</AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid grid-cols-3 gap-5">
+                    {([
+                      { title: 'Чистые', limit: risk.cleanOpRisk, nextYear: nextYearRisk.clean },
+                      { title: 'Кредитные', limit: risk.creditOpRisk, nextYear: nextYearRisk.credit },
+                      { title: 'Косвенные', limit: risk.indirectLosses, nextYear: nextYearRisk.indirect },
+                    ] as const).map((item) => (
+                      <div key={item.title} className="space-y-1.5">
+                        <UtilizationCard title={item.title} lossLimit={item.limit} onExpand={() => setUtilizationOpen(true)} />
+                        {campaignActive && item.nextYear != null && (
+                          <div className="px-3 py-2 rounded-lg bg-primary/[0.04] border border-primary/15 flex items-center justify-between">
+                            <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                            <span className="text-xs font-semibold text-foreground">{item.nextYear} млн ₽</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Potential Losses */}
+              <AccordionItem value="potential" id="potential" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Потенциальные потери</AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {([
+                      { label: 'Чистые', value: risk.cleanOpRisk.value },
+                      { label: 'Кредитные', value: risk.creditOpRisk.value },
+                      { label: 'Косвенные', value: risk.indirectLosses.value },
+                    ] as const).map((item) => (
+                      <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-muted/30 space-y-1.5">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
+                        <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Scenarios */}
+              <AccordionItem value="scenarios" id="scenarios" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">
+                  <span className="flex items-center gap-2">
+                    Сценарии реализации риска
+                    <span className="text-xs font-normal text-muted-foreground">· {risk.scenarios.length}</span>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  {risk.scenarios.length > 0 ? (
+                    <div className="space-y-3">
+                      {risk.scenarios.map((scenario) => (
+                        <ScenarioRow
+                          key={scenario.id}
+                          scenario={scenario}
+                          risk={risk}
+                          fmtVal={fmtVal}
+                          onOpen={() => setScenarioDrawerId(scenario.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Сценарии не добавлены</p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Mirroring */}
+              {risk.mirrors.length > 0 && (
+                <AccordionItem value="mirroring" id="mirroring" className="border border-border/60 rounded-xl bg-card px-4">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">
+                    <span className="flex items-center gap-2">
+                      Зеркалирование
+                      <span className="text-xs font-normal text-muted-foreground">· {risk.mirrors.length}</span>
+                      {campaignActive && myPendingMirrors.length > 0 && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-200 font-medium">
+                          {myPendingMirrors.length} на согласовании
+                        </span>
+                      )}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 space-y-3">
+                    {/* Group action for "my mirrors" awaiting approval */}
+                    {campaignActive && myPendingMirrors.length > 1 && (
+                      <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
+                        <div className="text-sm">
+                          <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
+                          {selectedMirrorIds.size > 0 && (
+                            <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
+                            <Check className="w-3.5 h-3.5" />
+                            Согласовать все мои зеркала
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-8 text-xs"
+                            disabled={selectedMirrorIds.size === 0}
+                            onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                            Вернуть выбранные
+                          </Button>
+                        </div>
                       </div>
                     )}
-                  </div>
-                ))}
-              </div>
-            </section>
 
-            {/* Potential Losses — current only */}
-            <section id="potential" className="space-y-3">
-              <h2 className="text-base font-semibold">Потенциальные потери</h2>
-              <div className="grid grid-cols-3 gap-4">
-                {([
-                  { label: 'Чистые', value: risk.cleanOpRisk.value },
-                  { label: 'Кредитные', value: risk.creditOpRisk.value },
-                  { label: 'Косвенные', value: risk.indirectLosses.value },
-                ] as const).map((item) => (
-                  <div key={item.label} className="p-4 rounded-xl border border-border/60 bg-card space-y-1.5">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">{item.label}</p>
-                    <p className="text-lg font-semibold">{fmtVal(item.value)} <span className="text-xs font-normal text-muted-foreground">₽</span></p>
-                  </div>
-                ))}
-              </div>
-            </section>
+                    <div className="space-y-3">
+                      {risk.mirrors.map((mirror) => {
+                        const r = readMirror(mirror);
+                        const status = r.status;
+                        const isMine = !!mirror.isMine;
+                        const requiresMyApproval = isMine && status === 'Требует согласования';
 
-            {/* Scenarios — current only */}
-            <section id="scenarios" className="space-y-3">
-              <h2 className="text-base font-semibold">Сценарии реализации риска</h2>
-              {risk.scenarios.length > 0 ? (
-                <div className="space-y-3">
-                  {risk.scenarios.map((scenario) => (
-                    <ScenarioRow
-                      key={scenario.id}
-                      scenario={scenario}
-                      risk={risk}
-                      fmtVal={fmtVal}
-                      onOpen={() => setScenarioDrawerId(scenario.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-sm">Сценарии не добавлены</p>
-              )}
-            </section>
+                        const calc = (val: number, lim: number) => {
+                          const v = Math.round(val * mirror.percentage / 100 * 10) / 10;
+                          const l = Math.round(lim * mirror.percentage / 100 * 10) / 10;
+                          const pct = l > 0 ? Math.round(v / l * 100) : 0;
+                          return { v, l, pct };
+                        };
+                        const cClean = calc(risk.cleanOpRisk.value || 0, risk.cleanOpRisk.limit || 0);
+                        const cCredit = calc(risk.creditOpRisk.value || 0, risk.creditOpRisk.limit || 0);
+                        const cIndirect = calc(risk.indirectLosses.value || 0, risk.indirectLosses.limit || 0);
 
-            {/* Mirroring */}
-            {risk.mirrors.length > 0 && (
-              <section id="mirroring" className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Зеркалирование</h2>
-                </div>
+                        const ny = mirror.nextYearLimits;
+                        const rows = [
+                          { label: 'Чистые', cur: cClean, ny: ny?.cleanOp },
+                          { label: 'В кредитовании', cur: cCredit, ny: ny?.creditOp },
+                          { label: 'Косвенные', cur: cIndirect, ny: ny?.indirect },
+                        ];
 
-                {/* Group action for "my mirrors" awaiting approval */}
-                {campaignActive && myPendingMirrors.length > 1 && (
-                  <div className="p-3 rounded-lg bg-primary/[0.04] border border-primary/20 flex items-center justify-between gap-3 flex-wrap">
-                    <div className="text-sm">
-                      <span className="font-medium text-foreground">На вашем согласовании: {myPendingMirrors.length} {myPendingMirrors.length === 1 ? 'зеркало' : 'зеркала'}</span>
-                      {selectedMirrorIds.size > 0 && (
-                        <span className="text-xs text-muted-foreground ml-2">Выбрано: {selectedMirrorIds.size}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" className="gap-1.5 h-8" onClick={approveAllMyMirrors}>
-                        <Check className="w-3.5 h-3.5" />
-                        Согласовать все мои зеркала
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 h-8 text-xs"
-                        disabled={selectedMirrorIds.size === 0}
-                        onClick={() => setReturnDialog({ open: true, mirrorIds: Array.from(selectedMirrorIds) })}
-                      >
-                        <Undo2 className="w-3.5 h-3.5" />
-                        Вернуть выбранные
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {risk.mirrors.map((mirror) => {
-                    const r = readMirror(mirror);
-                    const status = r.status;
-                    const isMine = !!mirror.isMine;
-                    const requiresMyApproval = isMine && status === 'Требует согласования';
-
-                    // current per-loss-type values
-                    const calc = (val: number, lim: number) => {
-                      const v = Math.round(val * mirror.percentage / 100 * 10) / 10;
-                      const l = Math.round(lim * mirror.percentage / 100 * 10) / 10;
-                      const pct = l > 0 ? Math.round(v / l * 100) : 0;
-                      return { v, l, pct };
-                    };
-                    const cClean = calc(risk.cleanOpRisk.value || 0, risk.cleanOpRisk.limit || 0);
-                    const cCredit = calc(risk.creditOpRisk.value || 0, risk.creditOpRisk.limit || 0);
-                    const cIndirect = calc(risk.indirectLosses.value || 0, risk.indirectLosses.limit || 0);
-
-                    const ny = mirror.nextYearLimits;
-
-                    const rows = [
-                      { label: 'Чистые', cur: cClean, ny: ny?.cleanOp },
-                      { label: 'В кредитовании', cur: cCredit, ny: ny?.creditOp },
-                      { label: 'Косвенные', cur: cIndirect, ny: ny?.indirect },
-                    ];
-
-                    return (
-                      <div key={mirror.id} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
-                        {/* Header: subdivision + status + select */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-2 min-w-0">
-                            {requiresMyApproval && (
-                              <Checkbox
-                                checked={selectedMirrorIds.has(mirror.id)}
-                                onCheckedChange={() => toggleSelect(mirror.id)}
-                                className="mt-1"
-                              />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
-                              {status === 'Ожидает другого согласующего' && mirror.approver && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                  Ожидает согласования: {mirror.approver}
-                                </p>
-                              )}
-                              {status === 'Согласовано' && mirror.approver && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                  Согласовал: {mirror.approver}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {status === 'Возвращено' && r.returnComment && (
-                              <button
-                                type="button"
-                                title="Комментарий согласующего"
-                                onClick={() => setCommentDialog({ open: true, mirror: { ...mirror, returnComment: r.returnComment } })}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-destructive/30 bg-destructive/[0.06] text-destructive hover:bg-destructive/10 transition-colors"
-                              >
-                                <MessageSquareWarning className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {status && <MirrorStatusTag status={status} />}
-                          </div>
-                        </div>
-
-                        {/* Per loss-type rows */}
-                        <div className="space-y-2">
-                          {rows.map(row => (
-                            <div key={row.label} className="rounded-lg border border-border/50 overflow-hidden">
-                              <div className="px-3 py-2 flex items-center justify-between gap-3">
-                                <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
-                                <div className="flex items-center gap-4 flex-1 justify-end">
-                                  <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
-                                  <span className={cn(
-                                    "text-xs font-semibold w-10 text-right",
-                                    row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
-                                  )}>
-                                    {row.cur.pct}%
-                                  </span>
-                                  <span className="text-[11px] text-muted-foreground w-28 text-right">
-                                    лимит {row.cur.l} млн ₽
-                                  </span>
+                        return (
+                          <div key={mirror.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2 min-w-0">
+                                {requiresMyApproval && (
+                                  <Checkbox
+                                    checked={selectedMirrorIds.has(mirror.id)}
+                                    onCheckedChange={() => toggleSelect(mirror.id)}
+                                    className="mt-1"
+                                  />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{mirror.subdivision}</p>
+                                  {status === 'Ожидает другого согласующего' && mirror.approver && (
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">Ожидает согласования: {mirror.approver}</p>
+                                  )}
+                                  {status === 'Согласовано' && mirror.approver && (
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">Согласовал: {mirror.approver}</p>
+                                  )}
                                 </div>
                               </div>
-                              {campaignActive && row.ny != null && (
-                                <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
-                                  <span className="text-[11px] text-muted-foreground">Следующий год</span>
-                                  <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {status === 'Возвращено' && r.returnComment && (
+                                  <button
+                                    type="button"
+                                    title="Комментарий согласующего"
+                                    onClick={() => setCommentDialog({ open: true, mirror: { ...mirror, returnComment: r.returnComment } })}
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-destructive/30 bg-destructive/[0.06] text-destructive hover:bg-destructive/10 transition-colors"
+                                  >
+                                    <MessageSquareWarning className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {status && <MirrorStatusTag status={status} />}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
 
-            {/* Connections */}
-            <section id="connections" className="space-y-4">
-              <h2 className="text-base font-semibold">Связи</h2>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Меры</h3>
-                {mockMeasures.map((measure) => (
-                  <div key={measure.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                    <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{measure.title}</p>
-                      <p className="text-xs text-muted-foreground">{measure.id} • {measure.plannedDate}</p>
+                            <div className="space-y-2">
+                              {rows.map(row => (
+                                <div key={row.label} className="rounded-lg border border-border/50 bg-card overflow-hidden">
+                                  <div className="px-3 py-2 flex items-center justify-between gap-3">
+                                    <span className="text-xs text-muted-foreground w-28 shrink-0">{row.label}</span>
+                                    <div className="flex items-center gap-4 flex-1 justify-end">
+                                      <span className="text-sm font-medium text-foreground">{row.cur.v} млн ₽</span>
+                                      <span className={cn(
+                                        "text-xs font-semibold w-10 text-right",
+                                        row.cur.pct > 100 ? "text-destructive" : "text-muted-foreground"
+                                      )}>
+                                        {row.cur.pct}%
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground w-28 text-right">
+                                        лимит {row.cur.l} млн ₽
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {campaignActive && row.ny != null && (
+                                    <div className="px-3 py-1.5 bg-primary/[0.04] border-t border-primary/10 flex items-center justify-between">
+                                      <span className="text-[11px] text-muted-foreground">Следующий год</span>
+                                      <span className="text-xs font-semibold text-foreground">{row.ny} млн ₽</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/40 shrink-0">
-                      {measure.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Решения по рискам</h3>
-                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/30 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Пересмотр стратегии реагирования</p>
-                    <p className="text-xs text-muted-foreground">RSK-001 • 10.02.2026</p>
+              {/* Connections */}
+              <AccordionItem value="connections" id="connections" className="border border-border/60 rounded-xl bg-card px-4">
+                <AccordionTrigger className="text-base font-semibold hover:no-underline py-3">Связи</AccordionTrigger>
+                <AccordionContent className="pb-4 space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Меры</h3>
+                    {mockMeasures.map((measure) => (
+                      <div key={measure.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                        <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{measure.title}</p>
+                          <p className="text-xs text-muted-foreground">{measure.id} • {measure.plannedDate}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/40 shrink-0">
+                          {measure.status}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                  <Badge variant="outline" className="text-xs shrink-0">В работе</Badge>
-                </div>
-              </div>
-            </section>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Решения по рискам</h3>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground/30 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Пересмотр стратегии реагирования</p>
+                        <p className="text-xs text-muted-foreground">RSK-001 • 10.02.2026</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">В работе</Badge>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
+
 
           {/* Sidebar — single Информация panel, no tab toggle */}
           <div className="space-y-4">
