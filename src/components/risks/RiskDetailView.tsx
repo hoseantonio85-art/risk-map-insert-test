@@ -81,14 +81,25 @@ const sections = [
 import type { Scenario } from '@/types/risk';
 
 /** Compact scenario row — opens a side drawer with full details. */
-function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void }) {
+function ScenarioRow({ scenario, risk, fmtVal, onOpen, linkedCount }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void; linkedCount: number }) {
   const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const totalFact = factClean + factCredit + factIndirect;
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
   const hasMeasures = (scenario.measures?.length ?? 0) > 0 || scenario.id.endsWith('1') || scenario.id.endsWith('3');
-  const hasNewSource = scenario.sources?.some(s => s.hasNew);
+
+  // Aggregate source counters by type, increment "Риски" with linked Прочие сценарии
+  const baseSources = scenario.sources ?? [];
+  const sourceCounts = baseSources.map(s => ({ type: s.type, count: s.count, hasNew: !!s.hasNew }));
+  if (linkedCount > 0) {
+    const riskIdx = sourceCounts.findIndex(s => s.type === 'Риски');
+    if (riskIdx >= 0) {
+      sourceCounts[riskIdx] = { ...sourceCounts[riskIdx], count: sourceCounts[riskIdx].count + linkedCount, hasNew: true };
+    } else {
+      sourceCounts.push({ type: 'Риски', count: linkedCount, hasNew: true });
+    }
+  }
 
   return (
     <button
@@ -96,21 +107,35 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; r
       onClick={onOpen}
       className="w-full text-left rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-foreground">{scenario.description}</p>
-        {hasNewSource && (
-          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Есть новое
-          </span>
-        )}
-      </div>
+      <p className="text-sm text-foreground">{scenario.description}</p>
       <div className="flex items-center gap-4 text-xs flex-wrap text-muted-foreground">
         <span>Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
         <span>Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
         {totalFact > 0 && <span>Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>}
         <span className={cn("font-medium", hasMeasures ? "text-primary" : "")}>{hasMeasures ? 'Меры: есть' : 'Меры: нет'}</span>
       </div>
+      {sourceCounts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {sourceCounts.map(s => (
+            <span
+              key={s.type}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md border",
+                s.hasNew ? "border-primary/30 bg-primary/[0.06] text-foreground" : "border-border/60 bg-muted/40 text-muted-foreground"
+              )}
+            >
+              <span>{s.type}</span>
+              <span className="font-semibold text-foreground">{s.count}</span>
+              {s.hasNew && (
+                <span className="inline-flex items-center gap-1 text-primary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  новое
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
     </button>
   );
 }
