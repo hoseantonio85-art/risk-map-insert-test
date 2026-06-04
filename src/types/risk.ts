@@ -93,7 +93,9 @@ export interface Scenario {
   itService?: string;
   riskTypes?: string[];
   probability?: number;
-  sources?: { type: string; count: number }[];
+  sources?: { type: string; count: number; hasNew?: boolean }[];
+  riskKind?: string;
+  measures?: { id: string; title: string; date: string; dateLabel?: string; status: string; statusTone?: 'progress' | 'done' | 'new' }[];
   factClean?: number;
   factCredit?: number;
   factIndirect?: number;
