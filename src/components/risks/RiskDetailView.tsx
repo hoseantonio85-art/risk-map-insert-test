@@ -81,14 +81,25 @@ const sections = [
 import type { Scenario } from '@/types/risk';
 
 /** Compact scenario row — opens a side drawer with full details. */
-function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void }) {
+function ScenarioRow({ scenario, risk, fmtVal, onOpen, linkedCount }: { scenario: Scenario; risk: Risk; fmtVal: (v: number) => string; onOpen: () => void; linkedCount: number }) {
   const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const totalFact = factClean + factCredit + factIndirect;
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
   const hasMeasures = (scenario.measures?.length ?? 0) > 0 || scenario.id.endsWith('1') || scenario.id.endsWith('3');
-  const hasNewSource = scenario.sources?.some(s => s.hasNew);
+
+  // Aggregate source counters by type, increment "Риски" with linked Прочие сценарии
+  const baseSources = scenario.sources ?? [];
+  const sourceCounts = baseSources.map(s => ({ type: s.type, count: s.count, hasNew: !!s.hasNew }));
+  if (linkedCount > 0) {
+    const riskIdx = sourceCounts.findIndex(s => s.type === 'Риски');
+    if (riskIdx >= 0) {
+      sourceCounts[riskIdx] = { ...sourceCounts[riskIdx], count: sourceCounts[riskIdx].count + linkedCount, hasNew: true };
+    } else {
+      sourceCounts.push({ type: 'Риски', count: linkedCount, hasNew: true });
+    }
+  }
 
   return (
     <button
@@ -96,27 +107,41 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; r
       onClick={onOpen}
       className="w-full text-left rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-foreground">{scenario.description}</p>
-        {hasNewSource && (
-          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Есть новое
-          </span>
-        )}
-      </div>
+      <p className="text-sm text-foreground">{scenario.description}</p>
       <div className="flex items-center gap-4 text-xs flex-wrap text-muted-foreground">
         <span>Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
         <span>Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
         {totalFact > 0 && <span>Факт <span className="font-semibold text-foreground">{fmtVal(totalFact)} ₽</span></span>}
         <span className={cn("font-medium", hasMeasures ? "text-primary" : "")}>{hasMeasures ? 'Меры: есть' : 'Меры: нет'}</span>
       </div>
+      {sourceCounts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {sourceCounts.map(s => (
+            <span
+              key={s.type}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md border",
+                s.hasNew ? "border-primary/30 bg-primary/[0.06] text-foreground" : "border-border/60 bg-muted/40 text-muted-foreground"
+              )}
+            >
+              <span>{s.type}</span>
+              <span className="font-semibold text-foreground">{s.count}</span>
+              {s.hasNew && (
+                <span className="inline-flex items-center gap-1 text-primary">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  новое
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
     </button>
   );
 }
 
 /** Drawer with full scenario details. */
-function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void }) {
+function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherItems = [], onOpenLinkedItem }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void; linkedOtherItems?: { id: string; title: string; amount: number; date: string; source: string }[]; onOpenLinkedItem?: (id: string) => void }) {
   if (!scenario || !risk) return null;
   const factClean = scenario.factClean ?? Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = scenario.factCredit ?? Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
@@ -156,33 +181,76 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario:
             <p className="text-sm text-foreground leading-relaxed">{scenario.description}</p>
           </div>
 
-          {/* Sources */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Источники</p>
-            <div className="flex flex-wrap gap-2">
-              {sources.length === 0 ? (
-                <span className="text-xs text-muted-foreground">—</span>
-              ) : sources.map((s) => (
-                <button
-                  key={s.type}
-                  type="button"
-                  className={cn(
-                    "group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent/40 hover:border-primary/40 transition-colors",
-                    s.hasNew ? "border-primary/30" : "border-border/60"
+          {/* Sources — compact counters + expandable list including linked Прочие сценарии */}
+          {(() => {
+            const counts = sources.map(s => ({ type: s.type, count: s.count, hasNew: !!s.hasNew }));
+            if (linkedOtherItems.length > 0) {
+              const idx = counts.findIndex(c => c.type === 'Риски');
+              if (idx >= 0) counts[idx] = { ...counts[idx], count: counts[idx].count + linkedOtherItems.length, hasNew: true };
+              else counts.push({ type: 'Риски', count: linkedOtherItems.length, hasNew: true });
+            }
+            return (
+              <details className="space-y-2 group">
+                <summary className="cursor-pointer list-none">
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Источники</p>
+                    <div className="flex flex-wrap gap-2">
+                      {counts.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      ) : counts.map((s) => (
+                        <span
+                          key={s.type}
+                          className={cn(
+                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card",
+                            s.hasNew ? "border-primary/30" : "border-border/60"
+                          )}
+                        >
+                          <span className="text-xs text-foreground">{s.type}</span>
+                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
+                          {s.hasNew && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                              новое
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                      {counts.length > 0 && (
+                        <span className="inline-flex items-center text-[11px] text-primary hover:underline ml-1 group-open:hidden">Показать источники</span>
+                      )}
+                      {counts.length > 0 && (
+                        <span className="hidden group-open:inline-flex items-center text-[11px] text-primary hover:underline ml-1">Скрыть</span>
+                      )}
+                    </div>
+                  </div>
+                </summary>
+                <div className="space-y-1.5 pt-1">
+                  {linkedOtherItems.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onOpenLinkedItem?.(item.id)}
+                      className="w-full text-left p-2.5 rounded-lg border border-primary/20 bg-primary/[0.04] hover:bg-primary/[0.08] transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-primary font-medium">Прочий сценарий</p>
+                          <p className="text-sm text-foreground mt-0.5">{item.title}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{fmtVal(item.amount)} ₽ · {item.date} · {item.source}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {linkedOtherItems.length === 0 && sources.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Источников нет</p>
                   )}
-                >
-                  <span className="text-xs text-foreground">{s.type}</span>
-                  <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
-                  {s.hasNew && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      новое
-                    </span>
+                  {sources.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Полный перечень источников из исходных систем доступен по клику на чип-категорию.</p>
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
+              </details>
+            );
+          })()}
 
           {/* Фактические потери */}
           <div className="space-y-2">
@@ -380,73 +448,208 @@ function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: 
   );
 }
 
-/** Mock "Other losses" grouped scenario item. */
+/** Mock "Прочие сценарии" item — unclassified scenario fact awaiting attachment. */
 interface OtherLossItem {
   id: string;
   title: string;
+  description: string;
   amount: number;
+  factClean: number;
+  factCredit: number;
+  factIndirect: number;
   date: string;
   source: string;
+  lossType?: string;
+  status?: string;
   relinkedTo?: string;
 }
 
-/** Drawer with "Прочие потери" items and per-item Перепривязать action. */
-function OtherLossesDrawer({
+/** Drawer listing "Прочие сценарии" with summary totals and clickable items. */
+function OtherScenariosDrawer({
   isOpen,
   onClose,
   items,
   fmtVal,
-  onRelink,
+  onOpenItem,
 }: {
   isOpen: boolean;
   onClose: () => void;
   items: OtherLossItem[];
   fmtVal: (v: number) => string;
-  onRelink: (itemId: string) => void;
+  onOpenItem: (itemId: string) => void;
 }) {
+  const active = items.filter(i => !i.relinkedTo);
+  const sumClean = active.reduce((s, i) => s + i.factClean, 0);
+  const sumCredit = active.reduce((s, i) => s + i.factCredit, 0);
+  const sumIndirect = active.reduce((s, i) => s + i.factIndirect, 0);
+  const sumTotal = sumClean + sumCredit + sumIndirect;
+
+  const SumCard = ({ label, value }: { label: string; value: number }) => (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold mt-1">{value > 0 ? `${fmtVal(value)} ₽` : '—'}</p>
+    </div>
+  );
+
   return (
     <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Прочие потери</SheetTitle>
+      <SheetContent side="right" className="w-[520px] sm:max-w-[520px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-2xl font-semibold pr-8">Прочие сценарии</SheetTitle>
         </SheetHeader>
-        <p className="text-xs text-muted-foreground mb-3">
-          Факты без привязки к сценарию. Перепривяжите их к подходящему сценарию.
-        </p>
-        <div className="space-y-2">
-          {items.map(item => (
-            <div key={item.id} className="p-3 rounded-lg border border-border/60 bg-card">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.date} · {item.source}</p>
-                </div>
-                <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
-              </div>
-              {item.relinkedTo ? (
-                <p className="text-[11px] text-primary mt-2">Перепривязано к сценарию</p>
-              ) : (
-                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => onRelink(item.id)}>
-                  Перепривязать
-                </Button>
-              )}
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Суммы по прочим сценариям</p>
+            <div className="grid grid-cols-4 gap-2">
+              <SumCard label="Чистые" value={sumClean} />
+              <SumCard label="В кредитовании" value={sumCredit} />
+              <SumCard label="Косвенные" value={sumIndirect} />
+              <SumCard label="Итого" value={sumTotal} />
             </div>
-          ))}
+          </div>
+
+          <div className="space-y-2">
+            {active.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Нет прочих сценариев.</p>
+            ) : active.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onOpenItem(item.id)}
+                className="w-full text-left p-3 rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {item.date} · {item.source}{item.lossType ? ` · ${item.lossType}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
+                </div>
+                {item.status && (
+                  <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-md bg-muted text-foreground">
+                    {item.status}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-/** Modal to pick a target scenario for re-linking. */
+/** Nested drawer with single "Прочий сценарий" detail and Привязать action. */
+function OtherScenarioDetailDrawer({
+  item,
+  isOpen,
+  onClose,
+  fmtVal,
+  onRelink,
+}: {
+  item: OtherLossItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  fmtVal: (v: number) => string;
+  onRelink: (itemId: string) => void;
+}) {
+  if (!item) return null;
+
+  const ValueCard = ({ label, value }: { label: string; value: number }) => (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold mt-1">{value > 0 ? `${fmtVal(value)} ₽` : '—'}</p>
+    </div>
+  );
+
+  const Chip = ({ children }: { children: React.ReactNode }) => (
+    <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-muted/60 text-foreground">{children}</span>
+  );
+
+  // Potential losses — rough split of total amount for prototype
+  const potClean = Math.round(item.amount * 0.4);
+  const potCredit = Math.round(item.amount * 0.35);
+  const potIndirect = Math.round(item.amount * 0.25);
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-2xl font-semibold pr-8">Сценарий реализации</SheetTitle>
+        </SheetHeader>
+
+        <div className="space-y-6">
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">Описание сценария</p>
+            <p className="text-sm text-foreground leading-relaxed">{item.description || item.title}</p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Источники</p>
+            <div className="flex flex-wrap gap-2">
+              <Chip>{item.source} · {item.date}</Chip>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold">Фактические потери</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={item.factClean} />
+              <ValueCard label="В кредитовании" value={item.factCredit} />
+              <ValueCard label="Косвенные" value={item.factIndirect} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold">Потенциальные потери</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={potClean} />
+              <ValueCard label="В кредитовании" value={potCredit} />
+              <ValueCard label="Косвенные" value={potIndirect} />
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <h3 className="text-base font-semibold">Прочие параметры</h3>
+            {item.lossType && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Тип потери</p>
+                <div><Chip>{item.lossType}</Chip></div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <p className="text-[11px] text-muted-foreground">Источник</p>
+              <div><Chip>{item.source}</Chip></div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] text-muted-foreground">Дата</p>
+              <div><Chip>{item.date}</Chip></div>
+            </div>
+          </div>
+
+          <div className="pt-2 sticky bottom-0 bg-background pb-1">
+            <Button className="w-full" onClick={() => onRelink(item.id)}>
+              Привязать
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Modal to pick a target scenario for linking. */
 function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolean; onClose: () => void; scenarios: { id: string; description: string }[]; onSubmit: (scenarioId: string) => void }) {
   const [target, setTarget] = useState<string | null>(null);
   return (
     <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setTarget(null); onClose(); } }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Перепривязать к сценарию</DialogTitle>
-          <DialogDescription>Выберите сценарий, в источники которого попадёт эта потеря.</DialogDescription>
+          <DialogTitle>Привязать к сценарию</DialogTitle>
+          <DialogDescription>Выберите сценарий, в источники которого попадёт этот прочий сценарий.</DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
           {scenarios.map(s => (
@@ -467,7 +670,7 @@ function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolea
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => { setTarget(null); onClose(); }}>Отмена</Button>
-          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Перепривязать</Button>
+          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Привязать</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -481,15 +684,16 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
   const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
   const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
-  const [otherLossesOpen, setOtherLossesOpen] = useState(false);
+  const [otherScenariosOpen, setOtherScenariosOpen] = useState(false);
+  const [otherDetailId, setOtherDetailId] = useState<string | null>(null);
   const [relinkItemId, setRelinkItemId] = useState<string | null>(null);
 
-  // Mock "Прочие потери" items (prototype only)
+  // Mock "Прочие сценарии" items (prototype only)
   const [otherLossItems, setOtherLossItems] = useState<OtherLossItem[]>([
-    { id: 'ol-1', title: 'Списание по жалобе клиента', amount: 850_000, date: '12.03.2026', source: 'Жалобы' },
-    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', amount: 420_000, date: '04.04.2026', source: 'Инциденты' },
-    { id: 'ol-3', title: 'Штраф регулятора', amount: 530_000, date: '21.04.2026', source: 'Регулятор' },
-    { id: 'ol-4', title: 'Компенсация контрагенту', amount: 200_000, date: '02.05.2026', source: 'Договоры' },
+    { id: 'ol-1', title: 'Списание по жалобе клиента', description: 'Списание по жалобе клиента, не отнесённое ни к одному из текущих сценариев. Требует анализа и привязки.', amount: 850_000, factClean: 850_000, factCredit: 0, factIndirect: 0, date: '12.03.2026', source: 'Жалобы', lossType: 'Чистые', status: 'Новое' },
+    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', description: 'Возмещение клиенту по инциденту ИТ-системы, факт без привязки к сценарию.', amount: 420_000, factClean: 0, factCredit: 0, factIndirect: 420_000, date: '04.04.2026', source: 'Инциденты', lossType: 'Косвенные', status: 'Новое' },
+    { id: 'ol-3', title: 'Штраф регулятора', description: 'Штраф регулятора по результатам проверки.', amount: 530_000, factClean: 530_000, factCredit: 0, factIndirect: 0, date: '21.04.2026', source: 'Регулятор', lossType: 'Чистые' },
+    { id: 'ol-4', title: 'Компенсация контрагенту', description: 'Компенсация контрагенту по претензии, не отнесённой к сценарию.', amount: 200_000, factClean: 0, factCredit: 200_000, factIndirect: 0, date: '02.05.2026', source: 'Договоры', lossType: 'В кредитовании' },
   ]);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
@@ -731,20 +935,22 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           risk={risk}
                           fmtVal={fmtVal}
                           onOpen={() => setScenarioDrawerId(scenario.id)}
+                          linkedCount={otherLossItems.filter(i => i.relinkedTo === scenario.id).length}
                         />
                       ))}
-                      {/* Прочие потери — grouped scenario for unclassified facts */}
+                      {/* Прочие сценарии — grouped scenario entry for unclassified facts */}
                       {(() => {
-                        const total = otherLossItems.reduce((s, i) => s + i.amount, 0);
+                        const active = otherLossItems.filter(i => !i.relinkedTo);
+                        const total = active.reduce((s, i) => s + i.amount, 0);
                         const limit = 8_000_000;
                         return (
                           <button
                             type="button"
-                            onClick={() => setOtherLossesOpen(true)}
+                            onClick={() => setOtherScenariosOpen(true)}
                             className="w-full text-left rounded-xl border border-dashed border-border bg-muted/20 hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium">Прочие потери</p>
+                              <p className="text-sm font-medium">Прочие сценарии</p>
                               <span className="text-[11px] px-2 py-0.5 rounded-md font-medium border text-muted-foreground border-border bg-card">
                                 Неклассифицированные
                               </span>
@@ -752,7 +958,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                             <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                               <span>Факт <span className="font-semibold text-foreground">{fmtVal(total)} ₽</span></span>
                               <span>Лимит <span className="font-semibold text-foreground">{fmtVal(limit)} ₽</span></span>
-                              <span>Источников <span className="font-semibold text-foreground">{otherLossItems.length}</span></span>
+                              <span>Сценариев <span className="font-semibold text-foreground">{active.length}</span></span>
                             </div>
                           </button>
                         );
@@ -1048,6 +1254,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         fmtVal={fmtVal}
         isOpen={!!scenarioDrawerId}
         onClose={() => setScenarioDrawerId(null)}
+        linkedOtherItems={otherLossItems.filter(i => i.relinkedTo === scenarioDrawerId)}
+        onOpenLinkedItem={(id) => setOtherDetailId(id)}
       />
 
       <ReturnMirrorsDialog
@@ -1067,10 +1275,18 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         subdivision={commentDialog.mirror?.subdivision}
       />
 
-      <OtherLossesDrawer
-        isOpen={otherLossesOpen}
-        onClose={() => setOtherLossesOpen(false)}
+      <OtherScenariosDrawer
+        isOpen={otherScenariosOpen}
+        onClose={() => setOtherScenariosOpen(false)}
         items={otherLossItems}
+        fmtVal={fmtVal}
+        onOpenItem={(id) => setOtherDetailId(id)}
+      />
+
+      <OtherScenarioDetailDrawer
+        item={otherLossItems.find(i => i.id === otherDetailId) || null}
+        isOpen={!!otherDetailId}
+        onClose={() => setOtherDetailId(null)}
         fmtVal={fmtVal}
         onRelink={(id) => setRelinkItemId(id)}
       />
@@ -1082,6 +1298,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         onSubmit={(scenarioId) => {
           if (relinkItemId) {
             setOtherLossItems(prev => prev.map(i => i.id === relinkItemId ? { ...i, relinkedTo: scenarioId } : i));
+            setOtherDetailId(null);
           }
         }}
       />
