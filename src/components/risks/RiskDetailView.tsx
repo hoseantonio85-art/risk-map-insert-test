@@ -141,7 +141,7 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen, linkedCount }: { scenario
 }
 
 /** Drawer with full scenario details. */
-function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void }) {
+function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherItems = [], onOpenLinkedItem }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void; linkedOtherItems?: { id: string; title: string; amount: number; date: string; source: string }[]; onOpenLinkedItem?: (id: string) => void }) {
   if (!scenario || !risk) return null;
   const factClean = scenario.factClean ?? Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = scenario.factCredit ?? Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
