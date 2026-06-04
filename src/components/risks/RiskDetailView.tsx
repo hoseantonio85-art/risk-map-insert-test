@@ -1211,6 +1211,8 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
         fmtVal={fmtVal}
         isOpen={!!scenarioDrawerId}
         onClose={() => setScenarioDrawerId(null)}
+        linkedOtherItems={otherLossItems.filter(i => i.relinkedTo === scenarioDrawerId)}
+        onOpenLinkedItem={(id) => setOtherDetailId(id)}
       />
 
       <ReturnMirrorsDialog
