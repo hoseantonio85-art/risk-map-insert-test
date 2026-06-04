@@ -616,15 +616,16 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
   const [scenarioDrawerId, setScenarioDrawerId] = useState<string | null>(null);
   const [returnDialog, setReturnDialog] = useState<{ open: boolean; mirrorIds: string[] }>({ open: false, mirrorIds: [] });
   const [commentDialog, setCommentDialog] = useState<{ open: boolean; mirror: Mirror | null }>({ open: false, mirror: null });
-  const [otherLossesOpen, setOtherLossesOpen] = useState(false);
+  const [otherScenariosOpen, setOtherScenariosOpen] = useState(false);
+  const [otherDetailId, setOtherDetailId] = useState<string | null>(null);
   const [relinkItemId, setRelinkItemId] = useState<string | null>(null);
 
-  // Mock "Прочие потери" items (prototype only)
+  // Mock "Прочие сценарии" items (prototype only)
   const [otherLossItems, setOtherLossItems] = useState<OtherLossItem[]>([
-    { id: 'ol-1', title: 'Списание по жалобе клиента', amount: 850_000, date: '12.03.2026', source: 'Жалобы' },
-    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', amount: 420_000, date: '04.04.2026', source: 'Инциденты' },
-    { id: 'ol-3', title: 'Штраф регулятора', amount: 530_000, date: '21.04.2026', source: 'Регулятор' },
-    { id: 'ol-4', title: 'Компенсация контрагенту', amount: 200_000, date: '02.05.2026', source: 'Договоры' },
+    { id: 'ol-1', title: 'Списание по жалобе клиента', description: 'Списание по жалобе клиента, не отнесённое ни к одному из текущих сценариев. Требует анализа и привязки.', amount: 850_000, factClean: 850_000, factCredit: 0, factIndirect: 0, date: '12.03.2026', source: 'Жалобы', lossType: 'Чистые', status: 'Новое' },
+    { id: 'ol-2', title: 'Возмещение по инциденту ИТ', description: 'Возмещение клиенту по инциденту ИТ-системы, факт без привязки к сценарию.', amount: 420_000, factClean: 0, factCredit: 0, factIndirect: 420_000, date: '04.04.2026', source: 'Инциденты', lossType: 'Косвенные', status: 'Новое' },
+    { id: 'ol-3', title: 'Штраф регулятора', description: 'Штраф регулятора по результатам проверки.', amount: 530_000, factClean: 530_000, factCredit: 0, factIndirect: 0, date: '21.04.2026', source: 'Регулятор', lossType: 'Чистые' },
+    { id: 'ol-4', title: 'Компенсация контрагенту', description: 'Компенсация контрагенту по претензии, не отнесённой к сценарию.', amount: 200_000, factClean: 0, factCredit: 200_000, factIndirect: 0, date: '02.05.2026', source: 'Договоры', lossType: 'В кредитовании' },
   ]);
 
   // Local mirror approval state (prototype-only, mocked over the immutable risk prop)
