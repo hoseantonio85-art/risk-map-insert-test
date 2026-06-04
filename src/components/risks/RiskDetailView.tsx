@@ -87,7 +87,8 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; r
   const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
   const totalFact = factClean + factCredit + factIndirect;
   const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
-  const hasMeasures = scenario.id.endsWith('1') || scenario.id.endsWith('3');
+  const hasMeasures = (scenario.measures?.length ?? 0) > 0 || scenario.id.endsWith('1') || scenario.id.endsWith('3');
+  const hasNewSource = scenario.sources?.some(s => s.hasNew);
 
   return (
     <button
@@ -95,7 +96,15 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; r
       onClick={onOpen}
       className="w-full text-left rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
     >
-      <p className="text-sm text-foreground">{scenario.description}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-foreground">{scenario.description}</p>
+        {hasNewSource && (
+          <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Есть новое
+          </span>
+        )}
+      </div>
       <div className="flex items-center gap-4 text-xs flex-wrap text-muted-foreground">
         <span>Потенциальные <span className="font-semibold text-foreground">{fmtVal(potentialLosses)} ₽</span></span>
         <span>Доля <span className="font-semibold text-foreground">{scenario.percentage}%</span></span>
@@ -109,68 +118,144 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen }: { scenario: Scenario; r
 /** Drawer with full scenario details. */
 function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void }) {
   if (!scenario || !risk) return null;
-  const factClean = Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
-  const factCredit = Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
-  const factIndirect = Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
-  const forecastClean = Math.round(factClean * 1.2 * 10) / 10;
-  const forecastCredit = Math.round(factCredit * 1.15 * 10) / 10;
-  const forecastIndirect = Math.round(factIndirect * 1.1 * 10) / 10;
-  const potentialLosses = Math.round(risk.potentialLosses * scenario.percentage / 100);
+  const factClean = scenario.factClean ?? Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factCredit = scenario.factCredit ?? Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const factIndirect = scenario.factIndirect ?? Math.round((risk.indirectLosses.value || 0) * scenario.percentage / 100 * 10) / 10;
+  const probability = scenario.probability ?? 16;
+  const potClean = Math.round(risk.potentialLosses * scenario.percentage / 100 * 0.34 * 10) / 10;
+  const potCredit = Math.round(risk.potentialLosses * scenario.percentage / 100 * 0.33 * 10) / 10;
+  const potIndirect = Math.round(risk.potentialLosses * scenario.percentage / 100 * 0.33 * 10) / 10;
+  const sources = scenario.sources ?? [];
+  const measures = scenario.measures ?? [];
+  const riskKind = scenario.riskKind ?? scenario.riskTypes?.[0];
+
+  const fmt = (v: number) => `${fmtVal(v)} ₽`;
+
+  const ValueCard = ({ label, value }: { label: string; value: string }) => (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold mt-1">{value}</p>
+    </div>
+  );
+
+  const Chip = ({ children }: { children: React.ReactNode }) => (
+    <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-muted/60 text-foreground">{children}</span>
+  );
 
   return (
     <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle className="text-base leading-snug pr-6">{scenario.description}</SheetTitle>
+      <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto p-6">
+        <SheetHeader className="mb-6">
+          <SheetTitle className="text-2xl font-semibold pr-8">Сценарий реализации</SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Потенциальные</p>
-              <p className="text-sm font-semibold mt-1">{fmtVal(potentialLosses)} ₽</p>
-            </div>
-            <div className="p-3 rounded-lg border border-border/60 bg-muted/30">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground/80 font-medium">Доля</p>
-              <p className="text-sm font-semibold mt-1">{scenario.percentage}%</p>
+        <div className="space-y-6">
+          {/* Description */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">Описание сценария</p>
+            <p className="text-sm text-foreground leading-relaxed">{scenario.description}</p>
+          </div>
+
+          {/* Sources */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Источники</p>
+            <div className="flex flex-wrap gap-2">
+              {sources.length === 0 ? (
+                <span className="text-xs text-muted-foreground">—</span>
+              ) : sources.map((s) => (
+                <button
+                  key={s.type}
+                  type="button"
+                  className={cn(
+                    "group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent/40 hover:border-primary/40 transition-colors",
+                    s.hasNew ? "border-primary/30" : "border-border/60"
+                  )}
+                >
+                  <span className="text-xs text-foreground">{s.type}</span>
+                  <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
+                  {s.hasNew && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      новое
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
-          {(scenario.causeType || scenario.itService) && (
+          {/* Фактические потери */}
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold">Фактические потери</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={factClean > 0 ? fmt(factClean) : '—'} />
+              <ValueCard label="В кредитовании" value={factCredit > 0 ? fmt(factCredit) : '—'} />
+              <ValueCard label="Косвенные" value={factIndirect > 0 ? fmt(factIndirect) : '—'} />
+            </div>
+          </div>
+
+          {/* Потенциальные потери */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold">Потенциальные потери</h3>
+              <span className="text-xs text-muted-foreground">Вероятность <span className="ml-1 px-1.5 py-0.5 rounded bg-muted text-foreground font-medium">{probability}%</span></span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={fmt(potClean)} />
+              <ValueCard label="В кредитовании" value={fmt(potCredit)} />
+              <ValueCard label="Косвенные" value={fmt(potIndirect)} />
+            </div>
+          </div>
+
+          {/* Меры */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold">Меры</h3>
+              <button type="button" className="text-xs font-medium text-primary hover:underline">+ Добавить меру</button>
+            </div>
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Параметры</p>
-              <div className="space-y-1 text-sm">
-                {scenario.causeType && (
-                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">Тип причины</span><span className="text-right">{scenario.causeType}</span></div>
-                )}
-                {scenario.itService && (
-                  <div className="flex justify-between gap-3"><span className="text-muted-foreground">ИТ-услуга</span><span className="text-right">{scenario.itService}</span></div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Потери (Факт)</p>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-medium">{fmtVal(factClean)} ₽</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Кредитные</span><span className="font-medium">{fmtVal(factCredit)} ₽</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-medium">{fmtVal(factIndirect)} ₽</span></div>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Прогноз</p>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Чистые</span><span className="font-medium">{fmtVal(forecastClean)} ₽</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Кредитные</span><span className="font-medium">{fmtVal(forecastCredit)} ₽</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Косвенные</span><span className="font-medium">{fmtVal(forecastIndirect)} ₽</span></div>
-              </div>
+              {measures.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Мер не добавлено</p>
+              ) : measures.map(m => (
+                <div key={m.id} className="rounded-lg border border-border/60 p-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground leading-snug">{m.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {m.dateLabel ?? 'Дата'}: <span className="text-foreground">{m.date}</span>
+                    </p>
+                  </div>
+                  <span className={cn(
+                    "shrink-0 text-[11px] px-2 py-0.5 rounded-full",
+                    m.statusTone === 'done' && "bg-emerald-100 text-emerald-700",
+                    m.statusTone === 'progress' && "bg-sky-100 text-sky-700",
+                    (!m.statusTone || m.statusTone === 'new') && "bg-muted text-foreground"
+                  )}>{m.status}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-            Источник: <span className="text-foreground">Ручное создание</span>
+          {/* Прочие параметры */}
+          <div className="space-y-3 pt-2">
+            <h3 className="text-base font-semibold">Прочие параметры</h3>
+            {riskKind && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Вид риска</p>
+                <div><Chip>{riskKind}</Chip></div>
+              </div>
+            )}
+            {scenario.causeType && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Тип причины</p>
+                <div><Chip>{scenario.causeType}</Chip></div>
+              </div>
+            )}
+            {scenario.itService && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">ИТ-услуга</p>
+                <div><Chip>{scenario.itService}</Chip></div>
+              </div>
+            )}
           </div>
         </div>
       </SheetContent>

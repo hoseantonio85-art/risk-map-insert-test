@@ -32,7 +32,12 @@ export const mockRisks: Risk[] = [
         riskTypes: ['Неполные, неточные, неактуальные данные из внутренних источников', 'Кредитный риск'],
         causeType: 'Сбой ИТ-систем',
         itService: 'АБС',
-        sources: [{ type: 'Риски', count: 99 }, { type: 'События', count: 99 }],
+        sources: [{ type: 'Риски', count: 99, hasNew: true }, { type: 'События', count: 99 }],
+        riskKind: 'Пандемии, стихийные бедствия, техногенные происшествия и внешние события',
+        measures: [
+          { id: 'm1', title: 'Проверка на наличие статуса карты и счета при оформлении заявки в УКО. Ср...', date: '20.02.2024', dateLabel: 'Плановая дата', status: 'В работе', statusTone: 'progress' },
+          { id: 'm2', title: 'Передача признака инсайдера от АС ПС', date: '20.02.2024', dateLabel: 'Дата реализации', status: 'Реализована', statusTone: 'done' },
+        ],
         factClean: 6, factCredit: 2,
         groupScenario: 'Предоставление недостоверных сведений клиентом'
       }
