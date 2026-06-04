@@ -181,33 +181,76 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherIt
             <p className="text-sm text-foreground leading-relaxed">{scenario.description}</p>
           </div>
 
-          {/* Sources */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Источники</p>
-            <div className="flex flex-wrap gap-2">
-              {sources.length === 0 ? (
-                <span className="text-xs text-muted-foreground">—</span>
-              ) : sources.map((s) => (
-                <button
-                  key={s.type}
-                  type="button"
-                  className={cn(
-                    "group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card hover:bg-accent/40 hover:border-primary/40 transition-colors",
-                    s.hasNew ? "border-primary/30" : "border-border/60"
+          {/* Sources — compact counters + expandable list including linked Прочие сценарии */}
+          {(() => {
+            const counts = sources.map(s => ({ type: s.type, count: s.count, hasNew: !!s.hasNew }));
+            if (linkedOtherItems.length > 0) {
+              const idx = counts.findIndex(c => c.type === 'Риски');
+              if (idx >= 0) counts[idx] = { ...counts[idx], count: counts[idx].count + linkedOtherItems.length, hasNew: true };
+              else counts.push({ type: 'Риски', count: linkedOtherItems.length, hasNew: true });
+            }
+            return (
+              <details className="space-y-2 group">
+                <summary className="cursor-pointer list-none">
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Источники</p>
+                    <div className="flex flex-wrap gap-2">
+                      {counts.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      ) : counts.map((s) => (
+                        <span
+                          key={s.type}
+                          className={cn(
+                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card",
+                            s.hasNew ? "border-primary/30" : "border-border/60"
+                          )}
+                        >
+                          <span className="text-xs text-foreground">{s.type}</span>
+                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
+                          {s.hasNew && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                              новое
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                      {counts.length > 0 && (
+                        <span className="inline-flex items-center text-[11px] text-primary hover:underline ml-1 group-open:hidden">Показать источники</span>
+                      )}
+                      {counts.length > 0 && (
+                        <span className="hidden group-open:inline-flex items-center text-[11px] text-primary hover:underline ml-1">Скрыть</span>
+                      )}
+                    </div>
+                  </div>
+                </summary>
+                <div className="space-y-1.5 pt-1">
+                  {linkedOtherItems.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onOpenLinkedItem?.(item.id)}
+                      className="w-full text-left p-2.5 rounded-lg border border-primary/20 bg-primary/[0.04] hover:bg-primary/[0.08] transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-primary font-medium">Прочий сценарий</p>
+                          <p className="text-sm text-foreground mt-0.5">{item.title}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{fmtVal(item.amount)} ₽ · {item.date} · {item.source}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {linkedOtherItems.length === 0 && sources.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Источников нет</p>
                   )}
-                >
-                  <span className="text-xs text-foreground">{s.type}</span>
-                  <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
-                  {s.hasNew && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-primary">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      новое
-                    </span>
+                  {sources.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Полный перечень источников из исходных систем доступен по клику на чип-категорию.</p>
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
+              </details>
+            );
+          })()}
 
           {/* Фактические потери */}
           <div className="space-y-2">
