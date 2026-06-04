@@ -380,73 +380,208 @@ function CommentDialog({ isOpen, onClose, comment, author, date, subdivision }: 
   );
 }
 
-/** Mock "Other losses" grouped scenario item. */
+/** Mock "Прочие сценарии" item — unclassified scenario fact awaiting attachment. */
 interface OtherLossItem {
   id: string;
   title: string;
+  description: string;
   amount: number;
+  factClean: number;
+  factCredit: number;
+  factIndirect: number;
   date: string;
   source: string;
+  lossType?: string;
+  status?: string;
   relinkedTo?: string;
 }
 
-/** Drawer with "Прочие потери" items and per-item Перепривязать action. */
-function OtherLossesDrawer({
+/** Drawer listing "Прочие сценарии" with summary totals and clickable items. */
+function OtherScenariosDrawer({
   isOpen,
   onClose,
   items,
   fmtVal,
-  onRelink,
+  onOpenItem,
 }: {
   isOpen: boolean;
   onClose: () => void;
   items: OtherLossItem[];
   fmtVal: (v: number) => string;
-  onRelink: (itemId: string) => void;
+  onOpenItem: (itemId: string) => void;
 }) {
+  const active = items.filter(i => !i.relinkedTo);
+  const sumClean = active.reduce((s, i) => s + i.factClean, 0);
+  const sumCredit = active.reduce((s, i) => s + i.factCredit, 0);
+  const sumIndirect = active.reduce((s, i) => s + i.factIndirect, 0);
+  const sumTotal = sumClean + sumCredit + sumIndirect;
+
+  const SumCard = ({ label, value }: { label: string; value: number }) => (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold mt-1">{value > 0 ? `${fmtVal(value)} ₽` : '—'}</p>
+    </div>
+  );
+
   return (
     <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Прочие потери</SheetTitle>
+      <SheetContent side="right" className="w-[520px] sm:max-w-[520px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-2xl font-semibold pr-8">Прочие сценарии</SheetTitle>
         </SheetHeader>
-        <p className="text-xs text-muted-foreground mb-3">
-          Факты без привязки к сценарию. Перепривяжите их к подходящему сценарию.
-        </p>
-        <div className="space-y-2">
-          {items.map(item => (
-            <div key={item.id} className="p-3 rounded-lg border border-border/60 bg-card">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{item.date} · {item.source}</p>
-                </div>
-                <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
-              </div>
-              {item.relinkedTo ? (
-                <p className="text-[11px] text-primary mt-2">Перепривязано к сценарию</p>
-              ) : (
-                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => onRelink(item.id)}>
-                  Перепривязать
-                </Button>
-              )}
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Суммы по прочим сценариям</p>
+            <div className="grid grid-cols-4 gap-2">
+              <SumCard label="Чистые" value={sumClean} />
+              <SumCard label="В кредитовании" value={sumCredit} />
+              <SumCard label="Косвенные" value={sumIndirect} />
+              <SumCard label="Итого" value={sumTotal} />
             </div>
-          ))}
+          </div>
+
+          <div className="space-y-2">
+            {active.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Нет прочих сценариев.</p>
+            ) : active.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onOpenItem(item.id)}
+                className="w-full text-left p-3 rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:bg-accent/30 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {item.date} · {item.source}{item.lossType ? ` · ${item.lossType}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold whitespace-nowrap">{fmtVal(item.amount)} ₽</p>
+                </div>
+                {item.status && (
+                  <span className="inline-block mt-2 text-[11px] px-2 py-0.5 rounded-md bg-muted text-foreground">
+                    {item.status}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
 
-/** Modal to pick a target scenario for re-linking. */
+/** Nested drawer with single "Прочий сценарий" detail and Привязать action. */
+function OtherScenarioDetailDrawer({
+  item,
+  isOpen,
+  onClose,
+  fmtVal,
+  onRelink,
+}: {
+  item: OtherLossItem | null;
+  isOpen: boolean;
+  onClose: () => void;
+  fmtVal: (v: number) => string;
+  onRelink: (itemId: string) => void;
+}) {
+  if (!item) return null;
+
+  const ValueCard = ({ label, value }: { label: string; value: number }) => (
+    <div className="p-3 rounded-lg bg-muted/50">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold mt-1">{value > 0 ? `${fmtVal(value)} ₽` : '—'}</p>
+    </div>
+  );
+
+  const Chip = ({ children }: { children: React.ReactNode }) => (
+    <span className="inline-flex items-center text-xs px-2.5 py-1 rounded-md bg-muted/60 text-foreground">{children}</span>
+  );
+
+  // Potential losses — rough split of total amount for prototype
+  const potClean = Math.round(item.amount * 0.4);
+  const potCredit = Math.round(item.amount * 0.35);
+  const potIndirect = Math.round(item.amount * 0.25);
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-2xl font-semibold pr-8">Сценарий реализации</SheetTitle>
+        </SheetHeader>
+
+        <div className="space-y-6">
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">Описание сценария</p>
+            <p className="text-sm text-foreground leading-relaxed">{item.description || item.title}</p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Источники</p>
+            <div className="flex flex-wrap gap-2">
+              <Chip>{item.source} · {item.date}</Chip>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold">Фактические потери</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={item.factClean} />
+              <ValueCard label="В кредитовании" value={item.factCredit} />
+              <ValueCard label="Косвенные" value={item.factIndirect} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-base font-semibold">Потенциальные потери</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <ValueCard label="Чистые" value={potClean} />
+              <ValueCard label="В кредитовании" value={potCredit} />
+              <ValueCard label="Косвенные" value={potIndirect} />
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <h3 className="text-base font-semibold">Прочие параметры</h3>
+            {item.lossType && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Тип потери</p>
+                <div><Chip>{item.lossType}</Chip></div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <p className="text-[11px] text-muted-foreground">Источник</p>
+              <div><Chip>{item.source}</Chip></div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[11px] text-muted-foreground">Дата</p>
+              <div><Chip>{item.date}</Chip></div>
+            </div>
+          </div>
+
+          <div className="pt-2 sticky bottom-0 bg-background pb-1">
+            <Button className="w-full" onClick={() => onRelink(item.id)}>
+              Привязать
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Modal to pick a target scenario for linking. */
 function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolean; onClose: () => void; scenarios: { id: string; description: string }[]; onSubmit: (scenarioId: string) => void }) {
   const [target, setTarget] = useState<string | null>(null);
   return (
     <Dialog open={isOpen} onOpenChange={(v) => { if (!v) { setTarget(null); onClose(); } }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Перепривязать к сценарию</DialogTitle>
-          <DialogDescription>Выберите сценарий, в источники которого попадёт эта потеря.</DialogDescription>
+          <DialogTitle>Привязать к сценарию</DialogTitle>
+          <DialogDescription>Выберите сценарий, в источники которого попадёт этот прочий сценарий.</DialogDescription>
         </DialogHeader>
         <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
           {scenarios.map(s => (
@@ -467,7 +602,7 @@ function RelinkDialog({ isOpen, onClose, scenarios, onSubmit }: { isOpen: boolea
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => { setTarget(null); onClose(); }}>Отмена</Button>
-          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Перепривязать</Button>
+          <Button disabled={!target} onClick={() => { if (target) { onSubmit(target); setTarget(null); onClose(); } }}>Привязать</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
