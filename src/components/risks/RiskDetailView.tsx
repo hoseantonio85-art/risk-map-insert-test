@@ -869,18 +869,19 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           onOpen={() => setScenarioDrawerId(scenario.id)}
                         />
                       ))}
-                      {/* Прочие потери — grouped scenario for unclassified facts */}
+                      {/* Прочие сценарии — grouped scenario entry for unclassified facts */}
                       {(() => {
-                        const total = otherLossItems.reduce((s, i) => s + i.amount, 0);
+                        const active = otherLossItems.filter(i => !i.relinkedTo);
+                        const total = active.reduce((s, i) => s + i.amount, 0);
                         const limit = 8_000_000;
                         return (
                           <button
                             type="button"
-                            onClick={() => setOtherLossesOpen(true)}
+                            onClick={() => setOtherScenariosOpen(true)}
                             className="w-full text-left rounded-xl border border-dashed border-border bg-muted/20 hover:border-primary/40 hover:bg-accent/30 transition-colors p-4 space-y-2"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium">Прочие потери</p>
+                              <p className="text-sm font-medium">Прочие сценарии</p>
                               <span className="text-[11px] px-2 py-0.5 rounded-md font-medium border text-muted-foreground border-border bg-card">
                                 Неклассифицированные
                               </span>
@@ -888,7 +889,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                             <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                               <span>Факт <span className="font-semibold text-foreground">{fmtVal(total)} ₽</span></span>
                               <span>Лимит <span className="font-semibold text-foreground">{fmtVal(limit)} ₽</span></span>
-                              <span>Источников <span className="font-semibold text-foreground">{otherLossItems.length}</span></span>
+                              <span>Сценариев <span className="font-semibold text-foreground">{active.length}</span></span>
                             </div>
                           </button>
                         );
