@@ -892,6 +892,7 @@ export function RiskDetailView({ risk, isOpen, onClose, onEdit, onOpenWizard }: 
                           risk={risk}
                           fmtVal={fmtVal}
                           onOpen={() => setScenarioDrawerId(scenario.id)}
+                          linkedCount={otherLossItems.filter(i => i.relinkedTo === scenario.id).length}
                         />
                       ))}
                       {/* Прочие сценарии — grouped scenario entry for unclassified facts */}
