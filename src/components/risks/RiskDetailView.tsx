@@ -393,6 +393,16 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherIt
         </div>
       </SheetContent>
     </Sheet>
+    <SourcesDrawer
+      isOpen={sourcesOpen}
+      onClose={() => setSourcesOpen(false)}
+      counts={counts}
+      sources={sources}
+      linkedOtherItems={linkedOtherItems}
+      fmtVal={fmtVal}
+      onOpenLinkedItem={(id) => { setSourcesOpen(false); onOpenLinkedItem?.(id); }}
+    />
+    </>
   );
 }
 
