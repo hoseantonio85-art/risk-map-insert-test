@@ -141,7 +141,98 @@ function ScenarioRow({ scenario, risk, fmtVal, onOpen, linkedCount }: { scenario
 }
 
 /** Drawer with full scenario details. */
+function SourcesDrawer({ isOpen, onClose, counts, sources, linkedOtherItems, fmtVal, onOpenLinkedItem }: {
+  isOpen: boolean;
+  onClose: () => void;
+  counts: { type: string; count: number; hasNew?: boolean }[];
+  sources: { type: string; count: number; hasNew?: boolean }[];
+  linkedOtherItems: { id: string; title: string; amount: number; date: string; source: string }[];
+  fmtVal: (v: number) => string;
+  onOpenLinkedItem?: (id: string) => void;
+}) {
+  // Mock object IDs per type (prototype data)
+  const mockObjects: Record<string, string[]> = {
+    'Риски': ['RSK-1432', 'RSK-9812', 'RSK-7710', 'RSK-5521', 'RSK-3390'],
+    'События': ['EVT-221', 'EVT-918', 'EVT-447', 'EVT-1102'],
+    'Инциденты': ['INC-77', 'INC-104'],
+    'Аудиты': ['AUD-12'],
+  };
+  const groups = sources.map(s => ({
+    type: s.type,
+    items: (mockObjects[s.type] ?? Array.from({ length: Math.min(s.count, 6) }, (_, i) => `${s.type.slice(0, 3).toUpperCase()}-${100 + i}`)).slice(0, s.count),
+    hasNew: !!s.hasNew,
+  }));
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="right" className="w-[520px] sm:max-w-[520px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-2xl font-semibold pr-8">Источники</SheetTitle>
+        </SheetHeader>
+
+        <div className="flex flex-wrap gap-2 mb-5">
+          {counts.length === 0 ? (
+            <span className="text-xs text-muted-foreground">—</span>
+          ) : counts.map(s => (
+            <span key={s.type} className={cn(
+              "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border bg-card",
+              s.hasNew ? "border-primary/30" : "border-border/60"
+            )}>
+              <span className="text-xs text-foreground">{s.type}</span>
+              <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-foreground">{s.count}</span>
+              {s.hasNew && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+            </span>
+          ))}
+        </div>
+
+        <p className="text-xs text-muted-foreground mb-4">Объекты, повлиявшие на сценарий</p>
+
+        <div className="space-y-5">
+          {linkedOtherItems.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Прочие сценарии</p>
+              <div className="flex flex-wrap gap-2">
+                {linkedOtherItems.map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onOpenLinkedItem?.(item.id)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/[0.06] hover:bg-primary/[0.12] transition-colors"
+                  >
+                    <span className="text-xs text-foreground">{item.title}</span>
+                    <span className="text-[11px] text-muted-foreground">· {fmtVal(item.amount)} ₽</span>
+                    <span className="text-[10px] font-medium text-primary ml-0.5">новое</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {groups.map(g => (
+            <div key={g.type} className="space-y-2">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{g.type}</p>
+              <div className="flex flex-wrap gap-2">
+                {g.items.map(id => (
+                  <span key={id} className={cn(
+                    "inline-flex items-center px-2.5 py-1 rounded-full border text-xs cursor-default",
+                    g.hasNew ? "border-primary/20 bg-primary/[0.04] text-foreground" : "border-border/60 bg-card text-foreground"
+                  )}>{id}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {groups.length === 0 && linkedOtherItems.length === 0 && (
+            <p className="text-xs text-muted-foreground">Источников нет</p>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherItems = [], onOpenLinkedItem }: { scenario: Scenario | null; risk: Risk | null; fmtVal: (v: number) => string; isOpen: boolean; onClose: () => void; linkedOtherItems?: { id: string; title: string; amount: number; date: string; source: string }[]; onOpenLinkedItem?: (id: string) => void }) {
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   if (!scenario || !risk) return null;
   const factClean = scenario.factClean ?? Math.round((risk.cleanOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
   const factCredit = scenario.factCredit ?? Math.round((risk.creditOpRisk.value || 0) * scenario.percentage / 100 * 10) / 10;
@@ -156,6 +247,13 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherIt
 
   const fmt = (v: number) => `${fmtVal(v)} ₽`;
 
+  const counts = sources.map(s => ({ type: s.type, count: s.count, hasNew: !!s.hasNew }));
+  if (linkedOtherItems.length > 0) {
+    const idx = counts.findIndex(c => c.type === 'Риски');
+    if (idx >= 0) counts[idx] = { ...counts[idx], count: counts[idx].count + linkedOtherItems.length, hasNew: true };
+    else counts.push({ type: 'Риски', count: linkedOtherItems.length, hasNew: true });
+  }
+
   const ValueCard = ({ label, value }: { label: string; value: string }) => (
     <div className="p-3 rounded-lg bg-muted/50">
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -168,6 +266,7 @@ function ScenarioDrawer({ scenario, risk, fmtVal, isOpen, onClose, linkedOtherIt
   );
 
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto p-6">
         <SheetHeader className="mb-6">
